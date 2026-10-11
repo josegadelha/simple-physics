@@ -5,9 +5,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class GridRenderer {
+    private static final float AXIS_WIDTH = 0.06f;
     private static final Color GRID_COLOR = Color.valueOf("afafaf");
     private static final Color AXIS_COLOR = Color.valueOf("686868");
-    private static final float AXIS_WIDTH = 0.03f;
 
     private final ShapeRenderer shapeRenderer;
     private final float gridSize;
@@ -19,20 +19,20 @@ public class GridRenderer {
 
 
     public void render(Camera camera, float width, float height) {
-        float halfWidth = width / 2;
-        float halfHeight = height / 2;
+        float minX = camera.position.x - width / 2;
+        float maxX = camera.position.x + width / 2;
+        float minY = camera.position.y - height / 2;
+        float maxY = camera.position.y + height / 2;
 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(GRID_COLOR);
 
-        for (float x = gridSize; x <= halfWidth; x += gridSize) {
-            shapeRenderer.line(x, -halfHeight, x, halfHeight);
-            shapeRenderer.line(-x, -halfHeight, -x, halfHeight);
+        for (float x = (float) Math.ceil(minX / gridSize) * gridSize; x <= maxX; x += gridSize) {
+            shapeRenderer.line(x, minY, x, maxY);
         }
-        for (float y = gridSize; y <= halfHeight; y += gridSize) {
-            shapeRenderer.line(-halfWidth, y, halfWidth, y);
-            shapeRenderer.line(-halfWidth, -y, halfWidth, -y);
+        for (float y = (float) Math.ceil(minY / gridSize) * gridSize; y <= maxY; y += gridSize) {
+            shapeRenderer.line(minX, y, maxX, y);
         }
 
         shapeRenderer.end();
@@ -40,8 +40,12 @@ public class GridRenderer {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(AXIS_COLOR);
 
-        shapeRenderer.rect(-AXIS_WIDTH / 2, -halfHeight, AXIS_WIDTH, height);
-        shapeRenderer.rect(-halfWidth, -AXIS_WIDTH / 2, width, AXIS_WIDTH);
+        if (minX <= 0 && maxX >= 0) {
+            shapeRenderer.rect(-AXIS_WIDTH / 2, minY, AXIS_WIDTH, height);
+        }
+        if (minY <= 0 && maxY >= 0) {
+            shapeRenderer.rect(minX, -AXIS_WIDTH / 2, width, AXIS_WIDTH);
+        }
 
         shapeRenderer.end();
     }

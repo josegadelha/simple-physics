@@ -1,0 +1,61 @@
+package br.edu.ufersa.simplephysics.physics;
+
+import br.edu.ufersa.simplephysics.math.Vector2;
+import br.edu.ufersa.simplephysics.physics.shape.PhysicsShape;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class PhysicsObject {
+    public Vector2 position;
+    public Vector2 velocity;
+    public double rotation;
+    public double angularVelocity;
+    public final List<PhysicsShape> shapes;
+
+    public PhysicsObject(double x, double y) {
+        this(x, y, new PhysicsShape[0]);
+    }
+
+    public PhysicsObject(double x, double y, PhysicsShape... shapes) {
+        this.position = new Vector2(x, y);
+        this.velocity = new Vector2(0, 0);
+        this.rotation = 0;
+        this.angularVelocity = 0;
+        this.shapes = new ArrayList<>(Arrays.asList(shapes));
+    }
+
+    public void step(double dt) {
+        // Integrate position and rotation based on velocities and timestep
+        this.position = this.position.add(this.velocity.scale(dt));
+        this.rotation += this.angularVelocity * dt;
+    }
+
+    public Vector2 localToWorld(Vector2 localPoint) {
+        // Calculate cosine and sine of the object's rotation angle.
+        double cos = Math.cos(rotation);
+        double sin = Math.sin(rotation);
+
+        // Rotate the local point and add the object's world X and Y positions.
+        return new Vector2(
+            position.x + localPoint.x * cos - localPoint.y * sin,
+            position.y + localPoint.x * sin + localPoint.y * cos
+        );
+    }
+
+    public Vector2 worldToLocal(Vector2 worldPoint) {
+        // Calculate cosine and sine of the inverse rotation angle.
+        double cos = Math.cos(-rotation);
+        double sin = Math.sin(-rotation);
+
+        // Subtract the object's world position to get the point relative to its origin.
+        Vector2 relativePoint = worldPoint.subtract(position);
+
+        // Apply the inverse rotation to calculate the local X and Y coordinates.
+        return new Vector2(
+            relativePoint.x * cos - relativePoint.y * sin,
+            relativePoint.x * sin + relativePoint.y * cos
+        );
+    }
+}

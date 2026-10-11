@@ -20,6 +20,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -31,6 +32,9 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class ExampleScreen extends ScreenAdapter {
     private static final float WORLD_UNITS_PER_PIXEL = 0.01f;
+    private static final float MIN_CAMERA_ZOOM = 0.25f;
+    private static final float MAX_CAMERA_ZOOM = 3f;
+    private static final float ZOOM_STEP = 1.1f;
     private static final int PANEL_WIDTH = 350;
     private static final int PANEL_GAP = 24;
     private static final Color BACKGROUND_COLOR = Color.valueOf("242424");
@@ -40,7 +44,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final Viewport panelViewport;
     private final ScreenViewport simulationViewport;
     private final Camera panelCamera;
-    private final Camera simulationCamera;
+    private final OrthographicCamera simulationCamera;
 
     private final ShapeRenderer shapeRenderer;
     private final ExtendedShapeRenderer extendedShapeRenderer;
@@ -55,8 +59,13 @@ public class ExampleScreen extends ScreenAdapter {
 
     private final Skin skin;
     private final Table panelTable;
+    private final Table shapeOptionsTable;
+    private final Table physicsOptionsTable;
+
     private final TextButton squareButton;
     private final TextButton circleButton;
+    private TextButton gravityButton;
+    private boolean gravityEnabled = true;
 
     public ExampleScreen() {
         panelCamera = new OrthographicCamera();
@@ -67,7 +76,7 @@ public class ExampleScreen extends ScreenAdapter {
 
         shapeRenderer = new ShapeRenderer();
         extendedShapeRenderer = new ExtendedShapeRenderer();
-        gridRenderer = new GridRenderer(0.5f);
+        gridRenderer = new GridRenderer(1f);
         physicsShapeRenderer = new PhysicsShapeRenderer();
 
         physicsWorld = new PhysicsWorld();
@@ -76,18 +85,24 @@ public class ExampleScreen extends ScreenAdapter {
         panelStage = new Stage(panelViewport);
 
         simulationInputAdapter = new InputAdapter() {
+            private boolean panning;
+            private int lastScreenX;
+            private int lastScreenY;
+
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                if (button != Input.Buttons.LEFT
-                    || (!squareButton.isChecked() && !circleButton.isChecked())) {
+                if (button == Input.Buttons.MIDDLE && isInsideSimulationViewport(screenX, screenY)) {
+                    panning = true;
+                    lastScreenX = screenX;
+                    lastScreenY = screenY;
+                    return true;
+                }
+
+                if (button != Input.Buttons.LEFT || (!squareButton.isChecked() && !circleButton.isChecked())) {
                     return false;
                 }
 
-                int screenYFromBottom = Gdx.graphics.getHeight() - screenY;
-                if (screenX < simulationViewport.getScreenX()
-                    || screenX >= simulationViewport.getScreenX() + simulationViewport.getScreenWidth()
-                    || screenYFromBottom < simulationViewport.getScreenY()
-                    || screenYFromBottom >= simulationViewport.getScreenY() + simulationViewport.getScreenHeight()) {
+                if (!isInsideSimulationViewport(screenX, screenY)) {
                     return false;
                 }
 
@@ -98,6 +113,48 @@ public class ExampleScreen extends ScreenAdapter {
                 } else {
                     physicsWorld.objects.add(createCircle(unprojectedPosition.x, unprojectedPosition.y));
                 }
+                return true;
+            }
+
+            @Override
+            public boolean touchDragged(int screenX, int screenY, int pointer) {
+                if (!panning) {
+                    return false;
+                }
+
+                simulationCamera.position.add(
+                    -(screenX - lastScreenX) * WORLD_UNITS_PER_PIXEL * simulationCamera.zoom,
+                    (screenY - lastScreenY) * WORLD_UNITS_PER_PIXEL * simulationCamera.zoom,
+                    0
+                );
+                simulationCamera.update();
+                lastScreenX = screenX;
+                lastScreenY = screenY;
+                return true;
+            }
+
+            @Override
+            public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+                if (button != Input.Buttons.MIDDLE || !panning) {
+                    return false;
+                }
+
+                panning = false;
+                return true;
+            }
+
+            @Override
+            public boolean scrolled(float amountX, float amountY) {
+                if (!isInsideSimulationViewport(Gdx.input.getX(), Gdx.input.getY()) || amountY == 0) {
+                    return false;
+                }
+
+                float zoomFactor = (float) Math.pow(ZOOM_STEP, amountY);
+                simulationCamera.zoom = Math.max(
+                    MIN_CAMERA_ZOOM,
+                    Math.min(MAX_CAMERA_ZOOM, simulationCamera.zoom * zoomFactor)
+                );
+                simulationCamera.update();
                 return true;
             }
         };
@@ -137,9 +194,51 @@ public class ExampleScreen extends ScreenAdapter {
             }
         });
 
-        panelTable.add(squareButton).center().width(300).height(50);
+        shapeOptionsTable = new Table(skin);
+        Label shapeTitle = new Label("Shape Settings", skin);
+        shapeOptionsTable.add(shapeTitle).center();
+        shapeOptionsTable.row().padTop(12);
+        shapeOptionsTable.add(squareButton).center().width(300).height(50);
+        shapeOptionsTable.row().padTop(12);
+        shapeOptionsTable.add(circleButton).width(300).height(50);
+
+        gravityButton = new TextButton("Gravity: ON", skin);
+        gravityButton.setChecked(true);
+
+        gravityButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                gravityEnabled = !gravityEnabled;
+
+                if(gravityEnabled) {
+                    physicsWorld.gravity = new Vector2(0, -9.81);
+                } else {
+                    physicsWorld.gravity = new Vector2(0, 0);
+                }
+
+                ((TextButton) actor).setText(
+                    gravityEnabled ? "Gravity: ON" : "Gravity: OFF"
+                );
+            }
+        });
+
+        physicsOptionsTable = new Table(skin);
+        Label physicsTitle = new Label("Physics Settings", skin);
+        physicsOptionsTable.add(physicsTitle).center();
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(gravityButton).width(300).height(50);
+
+        panelTable.add(shapeOptionsTable).width(300).height(200);
         panelTable.row().padTop(12);
-        panelTable.add(circleButton).width(300).height(50);
+        panelTable.add(physicsOptionsTable).width(300).height(200);
+    }
+
+    private boolean isInsideSimulationViewport(int screenX, int screenY) {
+        int screenYFromBottom = Gdx.graphics.getHeight() - screenY;
+        return screenX >= simulationViewport.getScreenX()
+            && screenX < simulationViewport.getScreenX() + simulationViewport.getScreenWidth()
+            && screenYFromBottom >= simulationViewport.getScreenY()
+            && screenYFromBottom < simulationViewport.getScreenY() + simulationViewport.getScreenHeight();
     }
 
     private PhysicsObject createSquare(float x, float y) {
@@ -157,8 +256,8 @@ public class ExampleScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        float simulationWidth = simulationViewport.getWorldWidth();
-        float simulationHeight = simulationViewport.getWorldHeight();
+        float simulationWidth = simulationViewport.getWorldWidth() * simulationCamera.zoom;
+        float simulationHeight = simulationViewport.getWorldHeight() * simulationCamera.zoom;
 
         ScreenUtils.clear(BACKGROUND_COLOR);
 
@@ -184,11 +283,11 @@ public class ExampleScreen extends ScreenAdapter {
         extendedShapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         extendedShapeRenderer.setColor(SIMULATION_COLOR);
         extendedShapeRenderer.roundedRect(
-            -simulationWidth / 2f,
-            -simulationHeight / 2f,
+            simulationCamera.position.x - simulationWidth / 2f,
+            simulationCamera.position.y - simulationHeight / 2f,
             simulationWidth,
             simulationHeight,
-            0.1f
+            0.1f * simulationCamera.zoom
         );
         extendedShapeRenderer.end();
 
@@ -207,7 +306,6 @@ public class ExampleScreen extends ScreenAdapter {
 
         simulationViewport.update(simulationWidth, availableHeight, false);
         simulationViewport.setScreenBounds(2 * PANEL_GAP + PANEL_WIDTH, PANEL_GAP, simulationWidth, availableHeight);
-        simulationCamera.position.set(0, 0, 0);
         simulationCamera.update();
     }
 

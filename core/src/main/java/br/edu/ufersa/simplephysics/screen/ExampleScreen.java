@@ -2,16 +2,13 @@ package br.edu.ufersa.simplephysics.screen;
 
 import br.edu.ufersa.simplephysics.graphic.ExtendedShapeRenderer;
 import br.edu.ufersa.simplephysics.graphic.GridRenderer;
+import br.edu.ufersa.simplephysics.graphic.ImpulseArrowRenderer;
 import br.edu.ufersa.simplephysics.graphic.PhysicsShapeRenderer;
 import br.edu.ufersa.simplephysics.math.Vector2;
-import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
-import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
-import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
 import br.edu.ufersa.simplephysics.ui.SimplePhysicsSkin;
+import br.edu.ufersa.simplephysics.ui.SimulationButtons;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Camera;
@@ -32,9 +29,6 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class ExampleScreen extends ScreenAdapter {
     private static final float WORLD_UNITS_PER_PIXEL = 0.01f;
-    private static final float MIN_CAMERA_ZOOM = 0.25f;
-    private static final float MAX_CAMERA_ZOOM = 3f;
-    private static final float ZOOM_STEP = 1.1f;
     private static final int PANEL_WIDTH = 350;
     private static final int PANEL_GAP = 24;
     private static final Color BACKGROUND_COLOR = Color.valueOf("242424");
@@ -46,16 +40,16 @@ public class ExampleScreen extends ScreenAdapter {
     private final Camera panelCamera;
     private final OrthographicCamera simulationCamera;
 
-    private final ShapeRenderer shapeRenderer;
     private final ExtendedShapeRenderer extendedShapeRenderer;
     private final GridRenderer gridRenderer;
+    private final ImpulseArrowRenderer impulseArrowRenderer;
 
     private final PhysicsShapeRenderer physicsShapeRenderer;
     private final PhysicsWorld physicsWorld;
 
     private final Stage panelStage;
     private final InputMultiplexer inputMultiplexer;
-    private final InputAdapter simulationInputAdapter;
+    private final SimulationInputController simulationInputController;
 
     private final Skin skin;
     private final Table panelTable;
@@ -64,8 +58,8 @@ public class ExampleScreen extends ScreenAdapter {
 
     private final TextButton squareButton;
     private final TextButton circleButton;
-    private TextButton gravityButton;
-    private boolean gravityEnabled = true;
+    private final TextButton gravityButton;
+    private final TextButton impulseButton;
 
     public ExampleScreen() {
         panelCamera = new OrthographicCamera();
@@ -74,9 +68,9 @@ public class ExampleScreen extends ScreenAdapter {
         simulationViewport = new ScreenViewport(simulationCamera);
         simulationViewport.setUnitsPerPixel(WORLD_UNITS_PER_PIXEL);
 
-        shapeRenderer = new ShapeRenderer();
         extendedShapeRenderer = new ExtendedShapeRenderer();
         gridRenderer = new GridRenderer(1f);
+        impulseArrowRenderer = new ImpulseArrowRenderer();
         physicsShapeRenderer = new PhysicsShapeRenderer();
 
         physicsWorld = new PhysicsWorld();
@@ -84,84 +78,17 @@ public class ExampleScreen extends ScreenAdapter {
         skin = SimplePhysicsSkin.create();
         panelStage = new Stage(panelViewport);
 
-        simulationInputAdapter = new InputAdapter() {
-            private boolean panning;
-            private int lastScreenX;
-            private int lastScreenY;
-
-            @Override
-            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                if (button == Input.Buttons.MIDDLE && isInsideSimulationViewport(screenX, screenY)) {
-                    panning = true;
-                    lastScreenX = screenX;
-                    lastScreenY = screenY;
-                    return true;
-                }
-
-                if (button != Input.Buttons.LEFT || (!squareButton.isChecked() && !circleButton.isChecked())) {
-                    return false;
-                }
-
-                if (!isInsideSimulationViewport(screenX, screenY)) {
-                    return false;
-                }
-
-                com.badlogic.gdx.math.Vector2 unprojectedPosition =
-                    simulationViewport.unproject(new com.badlogic.gdx.math.Vector2(screenX, screenY));
-                if (squareButton.isChecked()) {
-                    physicsWorld.objects.add(createSquare(unprojectedPosition.x, unprojectedPosition.y));
-                } else {
-                    physicsWorld.objects.add(createCircle(unprojectedPosition.x, unprojectedPosition.y));
-                }
-                return true;
-            }
-
-            @Override
-            public boolean touchDragged(int screenX, int screenY, int pointer) {
-                if (!panning) {
-                    return false;
-                }
-
-                simulationCamera.position.add(
-                    -(screenX - lastScreenX) * WORLD_UNITS_PER_PIXEL * simulationCamera.zoom,
-                    (screenY - lastScreenY) * WORLD_UNITS_PER_PIXEL * simulationCamera.zoom,
-                    0
-                );
-                simulationCamera.update();
-                lastScreenX = screenX;
-                lastScreenY = screenY;
-                return true;
-            }
-
-            @Override
-            public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-                if (button != Input.Buttons.MIDDLE || !panning) {
-                    return false;
-                }
-
-                panning = false;
-                return true;
-            }
-
-            @Override
-            public boolean scrolled(float amountX, float amountY) {
-                if (!isInsideSimulationViewport(Gdx.input.getX(), Gdx.input.getY()) || amountY == 0) {
-                    return false;
-                }
-
-                float zoomFactor = (float) Math.pow(ZOOM_STEP, amountY);
-                simulationCamera.zoom = Math.max(
-                    MIN_CAMERA_ZOOM,
-                    Math.min(MAX_CAMERA_ZOOM, simulationCamera.zoom * zoomFactor)
-                );
-                simulationCamera.update();
-                return true;
-            }
-        };
+        simulationInputController =
+            new SimulationInputController(
+                simulationViewport,
+                simulationCamera,
+                physicsWorld,
+                WORLD_UNITS_PER_PIXEL
+            );
 
         inputMultiplexer = new InputMultiplexer();
         inputMultiplexer.addProcessor(panelStage);
-        inputMultiplexer.addProcessor(simulationInputAdapter);
+        inputMultiplexer.addProcessor(simulationInputController.getInputProcessor());
         Gdx.input.setInputProcessor(inputMultiplexer);
 
         panelTable = new Table(skin);
@@ -169,30 +96,16 @@ public class ExampleScreen extends ScreenAdapter {
         panelTable.top().padTop(24);
         panelStage.addActor(panelTable);
 
-        squareButton = new TextButton("Create square: OFF", skin);
-        circleButton = new TextButton("Create circle: OFF", skin);
-        ButtonGroup<TextButton> shapeButtonGroup = new ButtonGroup<>();
-        shapeButtonGroup.setMinCheckCount(0);
-        shapeButtonGroup.setMaxCheckCount(1);
-        shapeButtonGroup.add(squareButton);
-        shapeButtonGroup.add(circleButton);
-
-        squareButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                ((TextButton) actor).setText(
-                    ((TextButton) actor).isChecked() ? "Create square: ON" : "Create square: OFF"
-                );
-            }
-        });
-        circleButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                ((TextButton) actor).setText(
-                    ((TextButton) actor).isChecked() ? "Create circle: ON" : "Create circle: OFF"
-                );
-            }
-        });
+        squareButton = SimulationButtons.createSquareButton(skin, simulationInputController);
+        circleButton = SimulationButtons.createCircleButton(skin, simulationInputController);
+        gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
+        impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
+        ButtonGroup<TextButton> toolButtonGroup = new ButtonGroup<>();
+        toolButtonGroup.setMinCheckCount(0);
+        toolButtonGroup.setMaxCheckCount(1);
+        toolButtonGroup.add(squareButton);
+        toolButtonGroup.add(circleButton);
+        toolButtonGroup.add(impulseButton);
 
         shapeOptionsTable = new Table(skin);
         Label shapeTitle = new Label("Shape Settings", skin);
@@ -202,56 +115,17 @@ public class ExampleScreen extends ScreenAdapter {
         shapeOptionsTable.row().padTop(12);
         shapeOptionsTable.add(circleButton).width(300).height(50);
 
-        gravityButton = new TextButton("Gravity: ON", skin);
-        gravityButton.setChecked(true);
-
-        gravityButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                gravityEnabled = !gravityEnabled;
-
-                if(gravityEnabled) {
-                    physicsWorld.gravity = new Vector2(0, -9.81);
-                } else {
-                    physicsWorld.gravity = new Vector2(0, 0);
-                }
-
-                ((TextButton) actor).setText(
-                    gravityEnabled ? "Gravity: ON" : "Gravity: OFF"
-                );
-            }
-        });
-
         physicsOptionsTable = new Table(skin);
         Label physicsTitle = new Label("Physics Settings", skin);
         physicsOptionsTable.add(physicsTitle).center();
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(gravityButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(impulseButton).width(300).height(50);
 
         panelTable.add(shapeOptionsTable).width(300).height(200);
         panelTable.row().padTop(12);
-        panelTable.add(physicsOptionsTable).width(300).height(200);
-    }
-
-    private boolean isInsideSimulationViewport(int screenX, int screenY) {
-        int screenYFromBottom = Gdx.graphics.getHeight() - screenY;
-        return screenX >= simulationViewport.getScreenX()
-            && screenX < simulationViewport.getScreenX() + simulationViewport.getScreenWidth()
-            && screenYFromBottom >= simulationViewport.getScreenY()
-            && screenYFromBottom < simulationViewport.getScreenY() + simulationViewport.getScreenHeight();
-    }
-
-    private PhysicsObject createSquare(float x, float y) {
-        return new PhysicsObject(x, y, new ConvexPolygonShape(
-            new Vector2(-0.25, -0.25),
-            new Vector2(0.25, -0.25),
-            new Vector2(0.25, 0.25),
-            new Vector2(-0.25, 0.25)
-        ));
-    }
-
-    private PhysicsObject createCircle(float x, float y) {
-        return new PhysicsObject(x, y, new CircleShape(0.25));
+        panelTable.add(physicsOptionsTable).width(300).height(260);
     }
 
     @Override
@@ -261,7 +135,9 @@ public class ExampleScreen extends ScreenAdapter {
 
         ScreenUtils.clear(BACKGROUND_COLOR);
 
-        physicsWorld.step(delta);
+        if (!simulationInputController.isApplyingImpulse()) {
+            physicsWorld.step(delta);
+        }
 
         panelViewport.apply();
         extendedShapeRenderer.setProjectionMatrix(panelCamera.combined);
@@ -293,6 +169,11 @@ public class ExampleScreen extends ScreenAdapter {
 
         gridRenderer.render(simulationCamera, simulationWidth, simulationHeight);
         physicsShapeRenderer.render(simulationCamera, physicsWorld);
+        impulseArrowRenderer.render(
+            simulationCamera,
+            simulationInputController.getImpulseStart(),
+            simulationInputController.getImpulseEnd()
+        );
     }
 
     @Override
@@ -322,9 +203,9 @@ public class ExampleScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
-        shapeRenderer.dispose();
         extendedShapeRenderer.dispose();
         gridRenderer.dispose();
+        impulseArrowRenderer.dispose();
         physicsShapeRenderer.dispose();
         panelStage.dispose();
         skin.dispose();

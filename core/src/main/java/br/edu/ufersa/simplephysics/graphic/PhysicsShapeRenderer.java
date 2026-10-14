@@ -71,6 +71,21 @@ public class PhysicsShapeRenderer {
         } finally {
             shapeRenderer.end();
         }
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(OUTLINE_COLOR);
+
+        try {
+            for (PhysicsObject object : world.objects) {
+                for (PhysicsShape shape : object.shapes) {
+                    if (shape instanceof CircleShape) {
+                        drawCircleCenter(object, (CircleShape) shape);
+                    }
+                }
+            }
+        } finally {
+            shapeRenderer.end();
+        }
     }
 
     private Color getFillColor(PhysicsObject object) {
@@ -116,6 +131,23 @@ public class PhysicsShapeRenderer {
             (float) center.x,
             (float) center.y,
             (float) circle.radius,
+            CIRCLE_SEGMENTS
+        );
+        shapeRenderer.line(
+            (float) center.x,
+            (float) center.y,
+            (float) (center.x + circle.radius * Math.cos(object.rotation)),
+            (float) (center.y + circle.radius * Math.sin(object.rotation))
+        );
+    }
+
+    private void drawCircleCenter(PhysicsObject object, CircleShape circle) {
+        Vector2 center = object.localToWorld(circle.offset);
+
+        shapeRenderer.circle(
+            (float) center.x,
+            (float) center.y,
+            (float) circle.radius * 0.1f,
             CIRCLE_SEGMENTS
         );
     }

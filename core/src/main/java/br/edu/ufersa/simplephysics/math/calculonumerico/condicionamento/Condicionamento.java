@@ -1,9 +1,9 @@
-package br.edu.ufersa.simplephysics.calcnumerico;
+package br.edu.ufersa.simplephysics.math.calculonumerico.condicionamento;
 
 import java.util.Locale;
 import java.util.Scanner;
 
-public class condicionamento {
+public class Condicionamento {
 
     //Tolerância para barrar pivôs muito pequenos
     private static final double tolerancia = 1e-12;
@@ -161,7 +161,7 @@ public class condicionamento {
             );
         }
 
-        double tolerancia = condicionamento.tolerancia * escala;
+        double tolerancia = Condicionamento.tolerancia * escala;
 
         // Monta a matriz aumentada [A | I].
         double[][] aumentada = new double[n][2 * n];

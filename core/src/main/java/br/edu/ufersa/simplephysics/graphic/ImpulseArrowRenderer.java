@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-public final class ImpulseArrowRenderer {
+public class ImpulseArrowRenderer {
     private final ShapeRenderer shapeRenderer = new ShapeRenderer();
     private static final Color ARROW_COLOR = Color.valueOf("686868");
 

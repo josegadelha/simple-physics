@@ -13,7 +13,7 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
-public final class SimulationInputController {
+public class SimulationInputController {
     private static final float MIN_CAMERA_ZOOM = 0.25f;
     private static final float MAX_CAMERA_ZOOM = 3f;
     private static final float ZOOM_STEP = 1.1f;

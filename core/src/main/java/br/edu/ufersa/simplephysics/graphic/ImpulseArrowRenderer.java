@@ -6,58 +6,76 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class ImpulseArrowRenderer {
-    private final ShapeRenderer shapeRenderer = new ShapeRenderer();
+    private static final int CIRCLE_SEGMENTS = 32;
     private static final Color ARROW_COLOR = Color.valueOf("686868");
+    private final ShapeRenderer shapeRenderer = new ShapeRenderer();
 
     public void render(OrthographicCamera camera, Vector2 start, Vector2 end) {
         if (start == null || end == null) {
             return;
         }
 
-        double dx = end.x - start.x;
-        double dy = end.y - start.y;
-        double length = Math.sqrt(dx * dx + dy * dy);
-        if (length < 0.0001) {
+        double deltaX = end.x - start.x;
+        double deltaY = end.y - start.y;
+        double arrowLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        if (arrowLength < 0.0001) {
             return;
         }
 
+        // Convert world coordinates to float values for the shape renderer.
         float startX = (float) start.x;
         float startY = (float) start.y;
         float endX = (float) end.x;
         float endY = (float) end.y;
-        float headLength = 0.12f * camera.zoom;
-        float headWidth = 0.07f * camera.zoom;
-        float directionX = (float) (dx / length);
-        float directionY = (float) (dy / length);
-        float baseX = endX - directionX * headLength;
-        float baseY = endY - directionY * headLength;
-        float headLeftX = baseX - directionY * headWidth;
-        float headLeftY = baseY + directionX * headWidth;
-        float headRightX = baseX + directionY * headWidth;
-        float headRightY = baseY - directionX * headWidth;
-        float halfLineWidth = 0.015f * camera.zoom;
-        float perpendicularX = -directionY * halfLineWidth;
-        float perpendicularY = directionX * halfLineWidth;
+
+        // Normalize the direction vector.
+        float directionX = (float) (deltaX / arrowLength);
+        float directionY = (float) (deltaY / arrowLength);
+
+        // The arrow head is sized relative to the camera zoom.
+        float arrowHeadLength = 0.12f * camera.zoom;
+        float arrowHeadWidth = 0.07f * camera.zoom;
+
+        // The arrow shaft's rendering parameters.
+        float shaftHalfThickness = 0.015f * camera.zoom;
+        float perpendicularDirectionX = -directionY * shaftHalfThickness;
+        float perpendicularDirectionY = directionX * shaftHalfThickness;
+
+        // The arrow head's rendering parameters.
+        float arrowHeadBaseX = endX - directionX * arrowHeadLength;
+        float arrowHeadBaseY = endY - directionY * arrowHeadLength;
+        float arrowHeadLeftX = arrowHeadBaseX - directionY * arrowHeadWidth;
+        float arrowHeadLeftY = arrowHeadBaseY + directionX * arrowHeadWidth;
+        float arrowHeadRightX = arrowHeadBaseX + directionY * arrowHeadWidth;
+        float arrowHeadRightY = arrowHeadBaseY - directionX * arrowHeadWidth;
 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(ARROW_COLOR);
-        shapeRenderer.circle(startX, startY, 0.04f * camera.zoom, 20);
+
+        // Draw the start marker at the start of the impulse.
+        shapeRenderer.circle(startX, startY, 0.04f * camera.zoom, CIRCLE_SEGMENTS);
+
+        // Draw the shaft as two triangles, stopping at the base of the arrow head.
         shapeRenderer.triangle(
-            startX + perpendicularX, startY + perpendicularY,
-            endX + perpendicularX, endY + perpendicularY,
-            endX - perpendicularX, endY - perpendicularY
+            startX + perpendicularDirectionX, startY + perpendicularDirectionY,
+            arrowHeadBaseX + perpendicularDirectionX, arrowHeadBaseY + perpendicularDirectionY,
+            arrowHeadBaseX - perpendicularDirectionX, arrowHeadBaseY - perpendicularDirectionY
         );
         shapeRenderer.triangle(
-            startX + perpendicularX, startY + perpendicularY,
-            endX - perpendicularX, endY - perpendicularY,
-            startX - perpendicularX, startY - perpendicularY
+            startX + perpendicularDirectionX, startY + perpendicularDirectionY,
+            arrowHeadBaseX - perpendicularDirectionX, arrowHeadBaseY - perpendicularDirectionY,
+            startX - perpendicularDirectionX, startY - perpendicularDirectionY
         );
+
+        // Draw the triangular tip at the end of the impulse.
         shapeRenderer.triangle(
             endX, endY,
-            headLeftX, headLeftY,
-            headRightX, headRightY
+            arrowHeadLeftX, arrowHeadLeftY,
+            arrowHeadRightX, arrowHeadRightY
         );
+
         shapeRenderer.end();
     }
 

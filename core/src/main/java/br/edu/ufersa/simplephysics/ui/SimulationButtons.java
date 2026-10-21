@@ -9,9 +9,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 
 public final class SimulationButtons {
+    // Button creation is provided through static methods; instances are not needed.
     private SimulationButtons() {
     }
 
+    // Creates a toggle button that selects the square-creation tool.
     public static TextButton createSquareButton(
         Skin skin,
         SimulationInputController inputController
@@ -24,6 +26,7 @@ public final class SimulationButtons {
         );
     }
 
+    // Creates a toggle button that selects the circle-creation tool.
     public static TextButton createCircleButton(
         Skin skin,
         SimulationInputController inputController
@@ -36,6 +39,7 @@ public final class SimulationButtons {
         );
     }
 
+    // Creates a toggle button that enables or disables gravity in the physics world.
     public static TextButton createGravityButton(Skin skin, PhysicsWorld world) {
         TextButton button = createToggleButton("Gravity", skin);
         button.setChecked(true);
@@ -50,6 +54,7 @@ public final class SimulationButtons {
         return button;
     }
 
+    // Creates a toggle button that selects the impulse tool.
     public static TextButton createImpulseButton(
         Skin skin,
         SimulationInputController inputController
@@ -62,6 +67,7 @@ public final class SimulationButtons {
         );
     }
 
+    // Selects the given tool when checked and clears it only if it is still the selected tool.
     private static TextButton createToolButton(
         String label,
         SimulationInputController.Tool tool,
@@ -82,6 +88,7 @@ public final class SimulationButtons {
         return button;
     }
 
+    // Creates a button whose label reflects whether its toggle is on or off.
     private static TextButton createToggleButton(String label, Skin skin) {
         TextButton button = new TextButton(label + ": OFF", skin);
         button.addListener(new ChangeListener() {

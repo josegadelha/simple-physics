@@ -75,17 +75,18 @@ public class SimulationInputController {
 
     private InputProcessor createInputProcessor() {
         return new InputAdapter() {
-            private boolean panning;
-            private int lastScreenX;
-            private int lastScreenY;
-            private PhysicsObject impulseObject;
+            private boolean isPanning;
+            private int previousScreenX;
+            private int previousScreenY;
+            private PhysicsObject draggedPhysicsObject;
 
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                // Middle-drag pans independently of the selected tool.
                 if (button == Input.Buttons.MIDDLE && isInsideViewport(screenX, screenY)) {
-                    panning = true;
-                    lastScreenX = screenX;
-                    lastScreenY = screenY;
+                    isPanning = true;
+                    previousScreenX = screenX;
+                    previousScreenY = screenY;
                     return true;
                 }
 
@@ -93,25 +94,26 @@ public class SimulationInputController {
                     return false;
                 }
 
-                Vector2 mousePosition = getMouseWorldPosition(screenX, screenY);
+                Vector2 worldPosition = getMouseWorldPosition(screenX, screenY);
                 if (selectedTool == Tool.APPLY_IMPULSE) {
-                    impulseObject = findObjectAt(mousePosition);
-                    if (impulseObject == null) {
+                    // Start an impulse drag only on an object.
+                    draggedPhysicsObject = findObjectAt(worldPosition);
+                    if (draggedPhysicsObject == null) {
                         return false;
                     }
 
-                    impulseStart = mousePosition;
-                    impulseEnd = mousePosition;
+                    impulseStart = worldPosition;
+                    impulseEnd = worldPosition;
                     applyingImpulse = true;
                     return true;
                 }
 
                 if (selectedTool == Tool.CREATE_SQUARE) {
-                    world.objects.add(createSquare(mousePosition));
+                    world.objects.add(createSquare(worldPosition));
                     return true;
                 }
                 if (selectedTool == Tool.CREATE_CIRCLE) {
-                    world.objects.add(createCircle(mousePosition));
+                    world.objects.add(createCircle(worldPosition));
                     return true;
                 }
                 return false;
@@ -119,48 +121,51 @@ public class SimulationInputController {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                if (impulseObject != null) {
+                if (draggedPhysicsObject != null) {
                     impulseEnd = getMouseWorldPosition(screenX, screenY);
                     return true;
                 }
 
-                if (!panning) {
+                if (!isPanning) {
                     return false;
                 }
 
+                // Adjust screen movement for camera zoom.
                 camera.position.add(
-                    -(screenX - lastScreenX) * worldUnitsPerPixel * camera.zoom,
-                    (screenY - lastScreenY) * worldUnitsPerPixel * camera.zoom,
+                    -(screenX - previousScreenX) * worldUnitsPerPixel * camera.zoom,
+                    (screenY - previousScreenY) * worldUnitsPerPixel * camera.zoom,
                     0
                 );
                 camera.update();
-                lastScreenX = screenX;
-                lastScreenY = screenY;
+                previousScreenX = screenX;
+                previousScreenY = screenY;
                 return true;
             }
 
             @Override
             public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-                if (button == Input.Buttons.LEFT && impulseObject != null) {
+                if (button == Input.Buttons.LEFT && draggedPhysicsObject != null) {
                     impulseEnd = getMouseWorldPosition(screenX, screenY);
                     Vector2 impulse = impulseEnd.subtract(impulseStart);
                     double magnitude = impulse.length();
                     if (magnitude > 0) {
-                        impulseObject.applyImpulse(impulse.scale(magnitude), impulseStart);
+                        // Apply the impulse where the drag began.
+                        draggedPhysicsObject.applyImpulse(impulse.scale(magnitude), impulseStart);
                     }
 
-                    impulseObject = null;
+                    // Reset the impulse drag state.
+                    draggedPhysicsObject = null;
                     impulseStart = null;
                     impulseEnd = null;
                     applyingImpulse = false;
                     return true;
                 }
 
-                if (button != Input.Buttons.MIDDLE || !panning) {
+                if (button != Input.Buttons.MIDDLE || !isPanning) {
                     return false;
                 }
 
-                panning = false;
+                isPanning = false;
                 return true;
             }
 
@@ -170,6 +175,7 @@ public class SimulationInputController {
                     return false;
                 }
 
+                // Keep zoom changes proportional across wheel steps.
                 float zoomFactor = (float) Math.pow(ZOOM_STEP, amountY);
                 camera.zoom = Math.max(
                     MIN_CAMERA_ZOOM,
@@ -182,6 +188,7 @@ public class SimulationInputController {
     }
 
     private boolean isInsideViewport(int screenX, int screenY) {
+        // Convert screen Y (top-origin) to viewport Y (bottom-origin).
         int screenYFromBottom = Gdx.graphics.getHeight() - screenY;
         return screenX >= viewport.getScreenX()
             && screenX < viewport.getScreenX() + viewport.getScreenWidth()
@@ -190,25 +197,28 @@ public class SimulationInputController {
     }
 
     private Vector2 getMouseWorldPosition(int screenX, int screenY) {
-        com.badlogic.gdx.math.Vector2 position =
+        // Convert screen coordinates to world coordinates.
+        com.badlogic.gdx.math.Vector2 worldPosition =
             viewport.unproject(new com.badlogic.gdx.math.Vector2(screenX, screenY));
-        return new Vector2(position.x, position.y);
+        return new Vector2(worldPosition.x, worldPosition.y);
     }
 
     private PhysicsObject findObjectAt(Vector2 worldPosition) {
-        for (int i = world.objects.size() - 1; i >= 0; i--) {
-            PhysicsObject object = world.objects.get(i);
-            Vector2 localPosition = object.worldToLocal(worldPosition);
+        // Check topmost objects first.
+        for (int objectIndex = world.objects.size() - 1; objectIndex >= 0; objectIndex--) {
+            PhysicsObject physicsObject = world.objects.get(objectIndex);
+            // Shapes are defined in object-local coordinates.
+            Vector2 localPosition = physicsObject.worldToLocal(worldPosition);
 
-            for (PhysicsShape shape : object.shapes) {
-                if (shape instanceof CircleShape) {
-                    CircleShape circle = (CircleShape) shape;
-                    if (localPosition.subtract(circle.offset).length() <= circle.radius) {
-                        return object;
+            for (PhysicsShape physicsShape : physicsObject.shapes) {
+                if (physicsShape instanceof CircleShape) {
+                    CircleShape circleShape = (CircleShape) physicsShape;
+                    if (localPosition.subtract(circleShape.offset).length() <= circleShape.radius) {
+                        return physicsObject;
                     }
-                } else if (shape instanceof ConvexPolygonShape
-                    && containsPoint((ConvexPolygonShape) shape, localPosition)) {
-                    return object;
+                } else if (physicsShape instanceof ConvexPolygonShape
+                    && containsPoint((ConvexPolygonShape) physicsShape, localPosition)) {
+                    return physicsObject;
                 }
             }
         }
@@ -217,13 +227,17 @@ public class SimulationInputController {
 
     private boolean containsPoint(ConvexPolygonShape polygon, Vector2 point) {
         boolean inside = false;
-        int count = polygon.vertices.size();
+        int vertexCount = polygon.vertices.size();
 
-        for (int i = 0, j = count - 1; i < count; j = i++) {
-            Vector2 a = polygon.vertices.get(i);
-            Vector2 b = polygon.vertices.get(j);
-            if ((a.y > point.y) != (b.y > point.y)) {
-                double intersectionX = (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x;
+        // Toggle inside/outside whenever a ray crosses an edge.
+        for (int vertexIndex = 0, previousVertexIndex = vertexCount - 1;
+             vertexIndex < vertexCount;
+             previousVertexIndex = vertexIndex++) {
+            Vector2 currentVertex = polygon.vertices.get(vertexIndex);
+            Vector2 previousVertex = polygon.vertices.get(previousVertexIndex);
+            if ((currentVertex.y > point.y) != (previousVertex.y > point.y)) {
+                double intersectionX = (previousVertex.x - currentVertex.x)
+                    * (point.y - currentVertex.y) / (previousVertex.y - currentVertex.y) + currentVertex.x;
                 if (point.x < intersectionX) {
                     inside = !inside;
                 }

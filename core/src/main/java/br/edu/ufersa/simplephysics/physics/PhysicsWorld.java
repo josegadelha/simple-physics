@@ -15,9 +15,11 @@ public class PhysicsWorld {
     }
 
     public void step(double dt) {
-        // Apply gravity to all objects
+        // Apply gravity only to dynamic objects.
         for (PhysicsObject object : objects) {
-            object.velocity = object.velocity.add(gravity.scale(dt));
+            if (!object.isStatic) {
+                object.velocity = object.velocity.add(gravity.scale(dt));
+            }
         }
 
         // Update all objects

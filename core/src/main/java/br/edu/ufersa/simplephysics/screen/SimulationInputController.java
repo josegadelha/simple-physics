@@ -33,6 +33,8 @@ public class SimulationInputController {
 
     private Tool selectedTool = Tool.NONE;
     private boolean applyingImpulse;
+    private boolean cameraFollowEnabled;
+    private PhysicsObject followedObject;
     private Vector2 impulseStart;
     private Vector2 impulseEnd;
 
@@ -73,6 +75,29 @@ public class SimulationInputController {
         return impulseEnd;
     }
 
+    public void setCameraFollowEnabled(boolean enabled) {
+        cameraFollowEnabled = enabled;
+        if (!enabled) {
+            followedObject = null;
+        }
+    }
+
+    public boolean isFollowingObject() {
+        return followedObject != null;
+    }
+
+    public boolean isWaitingForFollowTarget() {
+        return cameraFollowEnabled && followedObject == null;
+    }
+
+    public void updateCameraFollow() {
+        if (cameraFollowEnabled && followedObject != null) {
+            camera.position.x = (float) followedObject.position.x;
+            camera.position.y = (float) followedObject.position.y;
+            camera.update();
+        }
+    }
+
     private InputProcessor createInputProcessor() {
         return new InputAdapter() {
             private boolean isPanning;
@@ -95,6 +120,14 @@ public class SimulationInputController {
                 }
 
                 Vector2 worldPosition = getMouseWorldPosition(screenX, screenY);
+                if (cameraFollowEnabled && followedObject == null) {
+                    PhysicsObject selectedObject = findObjectAt(worldPosition);
+                    if (selectedObject != null) {
+                        followedObject = selectedObject;
+                    }
+                    return true;
+                }
+
                 if (selectedTool == Tool.APPLY_IMPULSE) {
                     // Start an impulse drag only on an object.
                     draggedPhysicsObject = findObjectAt(worldPosition);

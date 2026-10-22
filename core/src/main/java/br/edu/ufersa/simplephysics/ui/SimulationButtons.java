@@ -4,6 +4,7 @@ import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
 import br.edu.ufersa.simplephysics.screen.SimulationInputController;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -65,6 +66,81 @@ public final class SimulationButtons {
             skin,
             inputController
         );
+    }
+
+    // Creates a toggle button that lets the next simulation click choose the camera target.
+    public static TextButton createFollowObjectButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        TextButton button = createToggleButton("Follow", skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                inputController.setCameraFollowEnabled(button.isChecked());
+            }
+        });
+        return button;
+    }
+
+    // Makes any supplied tools exclusive; an optional follow button clears the selected tool.
+    public static void configureSimulationToolGroup(
+        TextButton followObjectButton,
+        TextButton... toolButtons
+    ) {
+        ButtonGroup<TextButton> toolGroup = new ButtonGroup<>();
+        toolGroup.setMinCheckCount(0);
+        toolGroup.setMaxCheckCount(1);
+        for (TextButton toolButton : toolButtons) {
+            toolGroup.add(toolButton);
+        }
+
+        if (followObjectButton != null) {
+            followObjectButton.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    if (followObjectButton.isChecked()) {
+                        toolGroup.uncheckAll();
+                    }
+                }
+            });
+        }
+    }
+
+    // Disables target buttons when the condition is active and any trigger button is checked.
+    public static void updateDisabledButtons(
+        TextButton[] triggerButtons,
+        TextButton[] buttonsToDisable,
+        boolean condition
+    ) {
+        boolean shouldDisable = condition;
+        if (shouldDisable) {
+            shouldDisable = false;
+            for (TextButton triggerButton : triggerButtons) {
+                if (triggerButton.isChecked()) {
+                    shouldDisable = true;
+                    break;
+                }
+            }
+        }
+
+        for (TextButton button : buttonsToDisable) {
+            button.setDisabled(shouldDisable);
+        }
+    }
+
+    // Updates the follow button label to show whether it is off, awaiting a target, or tracking.
+    public static void updateFollowObjectButtonLabel(
+        TextButton button,
+        SimulationInputController inputController
+    ) {
+        if (!button.isChecked()) {
+            button.setText("Follow: OFF");
+        } else if (inputController.isFollowingObject()) {
+            button.setText("Tracking");
+        } else {
+            button.setText("Select object");
+        }
     }
 
     // Selects the given tool when checked and clears it only if it is still the selected tool.

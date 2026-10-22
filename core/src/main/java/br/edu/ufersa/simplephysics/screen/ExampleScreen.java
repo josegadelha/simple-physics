@@ -16,7 +16,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
@@ -60,6 +59,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final TextButton circleButton;
     private final TextButton gravityButton;
     private final TextButton impulseButton;
+    private final TextButton followObjectButton;
 
     public ExampleScreen() {
         panelCamera = new OrthographicCamera();
@@ -100,12 +100,13 @@ public class ExampleScreen extends ScreenAdapter {
         circleButton = SimulationButtons.createCircleButton(skin, simulationInputController);
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
-        ButtonGroup<TextButton> toolButtonGroup = new ButtonGroup<>();
-        toolButtonGroup.setMinCheckCount(0);
-        toolButtonGroup.setMaxCheckCount(1);
-        toolButtonGroup.add(squareButton);
-        toolButtonGroup.add(circleButton);
-        toolButtonGroup.add(impulseButton);
+        followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
+        SimulationButtons.configureSimulationToolGroup(
+            followObjectButton,
+            squareButton,
+            circleButton,
+            impulseButton
+        );
 
         shapeOptionsTable = new Table(skin);
         Label shapeTitle = new Label("Shape Settings", skin);
@@ -122,10 +123,12 @@ public class ExampleScreen extends ScreenAdapter {
         physicsOptionsTable.add(gravityButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(followObjectButton).width(300).height(50);
 
         panelTable.add(shapeOptionsTable).width(300).height(200);
         panelTable.row().padTop(12);
-        panelTable.add(physicsOptionsTable).width(300).height(260);
+        panelTable.add(physicsOptionsTable).width(300).height(320);
     }
 
     @Override
@@ -138,6 +141,16 @@ public class ExampleScreen extends ScreenAdapter {
         if (!simulationInputController.isApplyingImpulse()) {
             physicsWorld.step(delta);
         }
+        simulationInputController.updateCameraFollow();
+        SimulationButtons.updateDisabledButtons(
+            new TextButton[] { followObjectButton },
+            new TextButton[] { squareButton, circleButton, impulseButton },
+            simulationInputController.isWaitingForFollowTarget()
+        );
+        SimulationButtons.updateFollowObjectButtonLabel(
+            followObjectButton,
+            simulationInputController
+        );
 
         panelViewport.apply();
         extendedShapeRenderer.setProjectionMatrix(panelCamera.combined);

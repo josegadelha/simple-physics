@@ -54,9 +54,11 @@ public class ExampleScreen extends ScreenAdapter {
     private final Table panelTable;
     private final Table shapeOptionsTable;
     private final Table physicsOptionsTable;
+    private final Table cameraOptionsTable;
 
     private final TextButton squareButton;
     private final TextButton circleButton;
+    private final TextButton staticButton;
     private final TextButton gravityButton;
     private final TextButton impulseButton;
     private final TextButton followObjectButton;
@@ -98,9 +100,16 @@ public class ExampleScreen extends ScreenAdapter {
 
         squareButton = SimulationButtons.createSquareButton(skin, simulationInputController);
         circleButton = SimulationButtons.createCircleButton(skin, simulationInputController);
+        staticButton = SimulationButtons.createStaticButton(skin, simulationInputController);
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
         followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
+        Table shapeSizeControl = SimulationButtons.createShapeSizeControl(
+            skin,
+            squareButton,
+            circleButton,
+            simulationInputController
+        );
         SimulationButtons.configureSimulationToolGroup(
             followObjectButton,
             squareButton,
@@ -109,12 +118,16 @@ public class ExampleScreen extends ScreenAdapter {
         );
 
         shapeOptionsTable = new Table(skin);
-        Label shapeTitle = new Label("Shape Settings", skin);
+        Label shapeTitle = new Label("Object Settings", skin);
         shapeOptionsTable.add(shapeTitle).center();
+        shapeOptionsTable.row().padTop(12);
+        shapeOptionsTable.add(shapeSizeControl).width(300).height(50);
         shapeOptionsTable.row().padTop(12);
         shapeOptionsTable.add(squareButton).center().width(300).height(50);
         shapeOptionsTable.row().padTop(12);
         shapeOptionsTable.add(circleButton).width(300).height(50);
+        shapeOptionsTable.row().padTop(12);
+        shapeOptionsTable.add(staticButton).width(300).height(50);
 
         physicsOptionsTable = new Table(skin);
         Label physicsTitle = new Label("Physics Settings", skin);
@@ -123,12 +136,18 @@ public class ExampleScreen extends ScreenAdapter {
         physicsOptionsTable.add(gravityButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseButton).width(300).height(50);
-        physicsOptionsTable.row().padTop(12);
-        physicsOptionsTable.add(followObjectButton).width(300).height(50);
 
-        panelTable.add(shapeOptionsTable).width(300).height(200);
+        cameraOptionsTable = new Table(skin);
+        Label cameraTitle = new Label("Camera Settings", skin);
+        cameraOptionsTable.add(cameraTitle).center();
+        cameraOptionsTable.row().padTop(12);
+        cameraOptionsTable.add(followObjectButton).width(300).height(50);
+
+        panelTable.add(shapeOptionsTable).width(300).height(310);
         panelTable.row().padTop(12);
-        panelTable.add(physicsOptionsTable).width(300).height(320);
+        panelTable.add(physicsOptionsTable).width(300).height(200);
+        panelTable.row().padTop(12);
+        panelTable.add(cameraOptionsTable).width(300).height(110);
     }
 
     @Override

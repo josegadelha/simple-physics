@@ -17,6 +17,8 @@ public class SimulationInputController {
     private static final float MIN_CAMERA_ZOOM = 0.25f;
     private static final float MAX_CAMERA_ZOOM = 3f;
     private static final float ZOOM_STEP = 1.1f;
+    private static final double DEFAULT_CIRCLE_RADIUS = 0.25;
+    private static final double DEFAULT_SQUARE_SIDE_LENGTH = 0.5;
 
     public enum Tool {
         NONE,
@@ -32,6 +34,9 @@ public class SimulationInputController {
     private final float worldUnitsPerPixel;
 
     private Tool selectedTool = Tool.NONE;
+    private boolean newObjectStatic;
+    private double circleRadius = DEFAULT_CIRCLE_RADIUS;
+    private double squareSideLength = DEFAULT_SQUARE_SIDE_LENGTH;
     private boolean applyingImpulse;
     private boolean cameraFollowEnabled;
     private PhysicsObject followedObject;
@@ -61,6 +66,32 @@ public class SimulationInputController {
 
     public Tool getSelectedTool() {
         return selectedTool;
+    }
+
+    public void setNewObjectStatic(boolean newObjectStatic) {
+        this.newObjectStatic = newObjectStatic;
+    }
+
+    public double getCircleRadius() {
+        return circleRadius;
+    }
+
+    public void setCircleRadius(double circleRadius) {
+        if (!Double.isFinite(circleRadius) || circleRadius <= 0) {
+            throw new IllegalArgumentException("Circle radius must be finite and positive");
+        }
+        this.circleRadius = circleRadius;
+    }
+
+    public double getSquareSideLength() {
+        return squareSideLength;
+    }
+
+    public void setSquareSideLength(double squareSideLength) {
+        if (!Double.isFinite(squareSideLength) || squareSideLength <= 0) {
+            throw new IllegalArgumentException("Square side length must be finite and positive");
+        }
+        this.squareSideLength = squareSideLength;
     }
 
     public boolean isApplyingImpulse() {
@@ -210,10 +241,7 @@ public class SimulationInputController {
 
                 // Keep zoom changes proportional across wheel steps.
                 float zoomFactor = (float) Math.pow(ZOOM_STEP, amountY);
-                camera.zoom = Math.max(
-                    MIN_CAMERA_ZOOM,
-                    Math.min(MAX_CAMERA_ZOOM, camera.zoom * zoomFactor)
-                );
+                camera.zoom = Math.clamp(camera.zoom * zoomFactor, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM);
                 camera.update();
                 return true;
             }
@@ -280,15 +308,21 @@ public class SimulationInputController {
     }
 
     private PhysicsObject createSquare(Vector2 position) {
-        return new PhysicsObject(position.x, position.y, new ConvexPolygonShape(
-            new Vector2(-0.25, -0.25),
-            new Vector2(0.25, -0.25),
-            new Vector2(0.25, 0.25),
-            new Vector2(-0.25, 0.25)
+        double halfSideLength = squareSideLength / 2;
+        return new PhysicsObject(position.x, position.y, newObjectStatic, new ConvexPolygonShape(
+            new Vector2(-halfSideLength, -halfSideLength),
+            new Vector2(halfSideLength, -halfSideLength),
+            new Vector2(halfSideLength, halfSideLength),
+            new Vector2(-halfSideLength, halfSideLength)
         ));
     }
 
     private PhysicsObject createCircle(Vector2 position) {
-        return new PhysicsObject(position.x, position.y, new CircleShape(0.25));
+        return new PhysicsObject(
+            position.x,
+            position.y,
+            newObjectStatic,
+            new CircleShape(circleRadius)
+        );
     }
 }

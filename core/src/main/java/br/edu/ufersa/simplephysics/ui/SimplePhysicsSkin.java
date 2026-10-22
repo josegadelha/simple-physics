@@ -11,20 +11,21 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable;
 
 public final class SimplePhysicsSkin {
 
-    // Palette
+    // Palette.
     private static final Color BACKGROUND = Color.valueOf("242424");
     private static final Color PANEL = Color.valueOf("2d2d2d");
     private static final Color SIMULATION = Color.valueOf("fefefe");
     private static final Color GRID = Color.valueOf("afafaf");
     private static final Color AXIS = Color.valueOf("686868");
 
-    // Derived UI colors
+    // Derived UI colors.
     private static final Color TEXT = Color.valueOf("e6e6e6");
     private static final Color TEXT_DISABLED = Color.valueOf("6a6a6a");
     private static final Color BUTTON_UP = Color.valueOf("3a3a3a");
@@ -41,23 +42,23 @@ public final class SimplePhysicsSkin {
     public static Skin create() {
         Skin skin = new Skin();
 
-        // Fonts
+        // Fonts.
         BitmapFont bodyFont = generateFont("FiraCode-Regular.ttf", 16, TEXT);
         BitmapFont buttonFont = generateFont("FiraCode-SemiBold.ttf", 16, TEXT);
 
         skin.add("default-font", bodyFont);
         skin.add("button-font", buttonFont);
 
-        // Label style
+        // Label style.
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = bodyFont;
         labelStyle.fontColor = TEXT;
         skin.add("default", labelStyle);
 
-        // Panel background
+        // Panel background.
         skin.add("panel", rounded(skin, "panel-texture", PANEL, CORNER_RADIUS));
 
-        // Button style
+        // Button style.
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.up = rounded(skin, "button-up-texture", BUTTON_UP, CORNER_RADIUS);
         buttonStyle.over = rounded(skin, "button-over-texture", BUTTON_OVER, CORNER_RADIUS);
@@ -72,6 +73,20 @@ public final class SimplePhysicsSkin {
 
         skin.add("default", buttonStyle);
 
+        TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
+        textFieldStyle.font = bodyFont;
+        textFieldStyle.fontColor = TEXT;
+        textFieldStyle.cursor = rounded(skin, "text-field-cursor", TEXT, 0);
+        textFieldStyle.selection = rounded(skin, "text-field-selection", BUTTON_OVER, 4);
+        textFieldStyle.background = rounded(skin, "text-field-background", BUTTON_UP, CORNER_RADIUS);
+        textFieldStyle.focusedBackground = rounded(
+            skin,
+            "text-field-focused-background",
+            BUTTON_OVER,
+            CORNER_RADIUS
+        );
+        skin.add("default", textFieldStyle);
+
         return skin;
     }
 
@@ -83,6 +98,7 @@ public final class SimplePhysicsSkin {
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();
             parameter.size = size;
             parameter.color = color;
+            parameter.characters += "\u2191\u2193";
             parameter.minFilter = Texture.TextureFilter.Linear;
             parameter.magFilter = Texture.TextureFilter.Linear;
 

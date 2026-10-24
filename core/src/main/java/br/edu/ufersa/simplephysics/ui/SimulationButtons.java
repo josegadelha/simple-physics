@@ -5,6 +5,9 @@ import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
 import br.edu.ufersa.simplephysics.screen.SimulationInputController;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -109,18 +112,21 @@ public final class SimulationButtons {
         java.util.function.DoubleConsumer valueSetter,
         java.util.function.DoubleSupplier valueGetter
     ) {
-        TextField valueField = new TextField(formatSize(initialValue), skin);
+        TextField valueField = new FocusClearingTextField(formatSize(initialValue), skin);
         valueField.setTextFieldFilter((textField, character) -> {
             if (!Character.isDigit(character) && character != '.') {
                 return false;
             }
 
             String currentText = textField.getText();
-            int start = textField.getCursorPosition();
-            int end = start;
-            if (textField.getSelectionStart() >= 0) {
-                start = Math.min(textField.getCursorPosition(), textField.getSelectionStart());
-                end = Math.max(textField.getCursorPosition(), textField.getSelectionStart());
+            int cursorPosition = Math.max(0, Math.min(textField.getCursorPosition(), currentText.length()));
+            int start = cursorPosition;
+            int end = cursorPosition;
+            int selectionStart = textField.getSelectionStart();
+            if (selectionStart >= 0 && selectionStart != cursorPosition) {
+                int selectionPosition = Math.max(0, Math.min(selectionStart, currentText.length()));
+                start = Math.min(cursorPosition, selectionPosition);
+                end = Math.max(cursorPosition, selectionPosition);
             }
             String candidate = currentText.substring(0, start)
                 + character
@@ -194,6 +200,47 @@ public final class SimulationButtons {
         return BigDecimal.valueOf(roundSize(value))
             .stripTrailingZeros()
             .toPlainString();
+    }
+
+    private static final class FocusClearingTextField extends TextField {
+        private final InputListener clickAwayListener = new InputListener() {
+            @Override
+            public boolean touchDown(
+                InputEvent event,
+                float x,
+                float y,
+                int pointer,
+                int button
+            ) {
+                if (event.getTarget() != FocusClearingTextField.this) {
+                    getStage().setKeyboardFocus(null);
+                }
+                return false;
+            }
+        };
+
+        private Stage listenerStage;
+
+        private FocusClearingTextField(String text, Skin skin) {
+            super(text, skin);
+        }
+
+        @Override
+        public void setStage(Stage stage) {
+            if (listenerStage != null && listenerStage != stage) {
+                listenerStage.getRoot().removeCaptureListener(clickAwayListener);
+                if (listenerStage.getKeyboardFocus() == this) {
+                    listenerStage.setKeyboardFocus(null);
+                }
+                listenerStage = null;
+            }
+
+            super.setStage(stage);
+            if (stage != null && listenerStage == null) {
+                listenerStage = stage;
+                stage.getRoot().addCaptureListener(clickAwayListener);
+            }
+        }
     }
 
     // Creates a toggle button that enables or disables gravity in the physics world.

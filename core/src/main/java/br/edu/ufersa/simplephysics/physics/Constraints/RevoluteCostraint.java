@@ -18,6 +18,8 @@ public class RevoluteCostraint extends Constraint {
     //invI = inércia inversa
     //Se um corpo for estático, sua massa e inércia = 0
     public double invMassA, invMassB, invIA, invIB;
+    //Limite de ângulos inferior e superior, erro de ângulo e ângulo atual
+    public Double lowerAngleLimit, upperAngleLimit, angleViolation, currentAngle;
 
     //Construtor da classe
     public RevoluteConstraint(PhysicsObject bodyA, PhysicsObject bodyB, Vector2 worldPoint, Double lowerAngleLimit, Double upperAngleLimit, double stiffness) {
@@ -28,15 +30,36 @@ public class RevoluteCostraint extends Constraint {
     }
 
     //Método que atualiza as posições dos pontos de ancoragem dos dois corpos
+    //Sobrescreve o update da Constraint (Será usado em outros constraints)
+    @Override
     public void update(Object settings){
+        //Pega o ponto local fixo guardado em localA/B e o converte para o espaço
+        //global (worldA/B), considerando a posição e rotação atuais do Corpo.
         this.worldA = this.bodyA.localToWorld(this.localA);
         this.worldB = this.bodyB.localToWorld(this.localB);
+
+        //Calcula o vetor raio rA/B que vai do centro de massa do Corpo até o
+        //ponto de ancoragem no mundo (worldA/B).
+        //Esse vetor age como um braço de alavanca para calcular o torque.
         this.rA = this.worldA.subtract(this.bodyA.position);
         this.rB = this.worldB.subtract(this.bodyB.position);
 
         //Calcula ângulo atual, rotação relativa entre os corpos
         this.currentAngle = this.bodyB.rotation - this.bodyA.rotation;
 
+        //Atualiza os valores de massa inversa (invMass)
+        //e inércia rotacional inversa (invI) para ambos os corpos.
+        //Se um corpo virar estático (isStatic == true),
+        //esses valores tornam-se 0,
+        //impedindo que ele seja movido por forças da junta.
+        this.invMassA = this.bodyA.isStatic ? 0 : 1.0 / this.bodyA.mass;
+        this.invMassB = this.bodyB.isStatic ? 0 : 1.0 / this.bodyB.mass;
+        this.invIA = this.bodyA.isStatic ? 0 : 1.0 / this.bodyA.momentOfInertia;
+        this.invIB = this.bodyB.isStatic ? 0 : 1.0 / this.bodyB.momentOfInertia;
+
+        //Verifica se esta tem uma configuração local (this.constraintSettings).
+        //Se não tiver, ela herda e utiliza as configurações globais
+        //do mundo repassadas no parâmetro settings.
         ConstraintSettingsModel cs = (this.constraintSettings != null) ? (ConstraintSettingsModel) this.constraintSettings : (ConstraintSettingsModel) settings;
 
         //Warm Starting: Reaplica o impulso do frame anterior para acelerar a convergência
@@ -44,10 +67,23 @@ public class RevoluteCostraint extends Constraint {
             this.bodyA.applyImpulse(this.accumulatedPointImpulse.scale(-1), this.worldA);
             this.bodyB.applyImpulse(this.accumulatedPointImpulse, this.worldB);
         }
+
+        //Se houver um limite inferior e o ângulo atual for menor, calcula o tamanho do erro
+        //Se houver um limite superior e o ângulo atual for maior, calcula erro de excesso
+        //Se o ângulo estiver dentro dos limites, zera o erro de ângulo
+        if (this.lowerAngleLimit != null && this.currentAngle < this.lowerAngleLimit) {
+            this.angleViolation = this.currentAngle - this.lowerAngleLimit;
+        } else if (this.upperAngleLimit != null && this.currentAngle > this.upperAngleLimit) {
+            this.angleViolation = this.currentAngle - this.upperAngleLimit;
+        } else {
+            this.angleViolation = 0.0;
+        }
     }
 
     public void solve(double dt){
         Vector2 velB = this.bodyB.velocity.add(rB.crossSv(this.bodyB.angularVelocity));
+
+        //Erro de velocidade
         Vector2 Cdot = velB.subtract(this.worldA);
 
         //Erro posicional
@@ -70,6 +106,7 @@ public class RevoluteCostraint extends Constraint {
         double iA = this.invIA;
         double iB = this.invIB;
 
+        //Raios de A e B
         Vector2 rA = this.rA;
         Vector2 rB = this.rB;
 

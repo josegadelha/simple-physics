@@ -31,16 +31,8 @@ class PhysicsObjectTest {
     }
 
     @Test
-    void usesDefaultMassAndMomentOfInertiaForDynamicObjects() {
-        PhysicsObject object = new PhysicsObject(0, 0, false);
-
-        assertEquals(1, object.mass, DELTA);
-        assertEquals(1, object.momentOfInertia, DELTA);
-    }
-
-    @Test
     void initializesStaticObjectWithInfiniteMassAndInertia() {
-        PhysicsObject object = new PhysicsObject(1, 2, true);
+        PhysicsObject object = new PhysicsObject(1, 2, true, 1, 1);
 
         assertTrue(object.isStatic);
         assertEquals(Double.POSITIVE_INFINITY, object.mass);
@@ -69,7 +61,7 @@ class PhysicsObjectTest {
 
     @Test
     void integratesDynamicPositionAndRotation() {
-        PhysicsObject object = new PhysicsObject(1, 2, false);
+        PhysicsObject object = new PhysicsObject(1, 2, false, 1, 1);
         object.velocity = new Vector2(3, -4);
         object.angularVelocity = 2;
 
@@ -81,7 +73,7 @@ class PhysicsObjectTest {
 
     @Test
     void doesNotMoveOrRotateStaticObject() {
-        PhysicsObject object = new PhysicsObject(1, 2, true);
+        PhysicsObject object = new PhysicsObject(1, 2, true, 1, 1);
         object.velocity = new Vector2(3, -4);
         object.angularVelocity = 2;
 
@@ -93,7 +85,7 @@ class PhysicsObjectTest {
 
     @Test
     void convertsPointsBetweenLocalAndWorldCoordinates() {
-        PhysicsObject object = new PhysicsObject(10, 20, false);
+        PhysicsObject object = new PhysicsObject(10, 20, false, 1, 1);
         object.rotation = Math.PI / 2;
         Vector2 localPoint = new Vector2(2, 0);
 
@@ -115,7 +107,7 @@ class PhysicsObjectTest {
 
     @Test
     void doesNotApplyImpulseToStaticObject() {
-        PhysicsObject object = new PhysicsObject(0, 0, true);
+        PhysicsObject object = new PhysicsObject(0, 0, true, 1, 1);
 
         object.applyImpulse(new Vector2(0, 6), new Vector2(2, 0));
 

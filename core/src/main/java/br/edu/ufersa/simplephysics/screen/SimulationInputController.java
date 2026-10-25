@@ -173,11 +173,21 @@ public class SimulationInputController {
                 }
 
                 if (selectedTool == Tool.CREATE_SQUARE) {
-                    world.objects.add(createSquare(worldPosition));
+                    world.addSquare(
+                        worldPosition.x,
+                        worldPosition.y,
+                        squareSideLength,
+                        newObjectStatic
+                    );
                     return true;
                 }
                 if (selectedTool == Tool.CREATE_CIRCLE) {
-                    world.objects.add(createCircle(worldPosition));
+                    world.addCircle(
+                        worldPosition.x,
+                        worldPosition.y,
+                        circleRadius,
+                        newObjectStatic
+                    );
                     return true;
                 }
                 return false;
@@ -307,22 +317,4 @@ public class SimulationInputController {
         return inside;
     }
 
-    private PhysicsObject createSquare(Vector2 position) {
-        double halfSideLength = squareSideLength / 2;
-        return new PhysicsObject(position.x, position.y, newObjectStatic, new ConvexPolygonShape(
-            new Vector2(-halfSideLength, -halfSideLength),
-            new Vector2(halfSideLength, -halfSideLength),
-            new Vector2(halfSideLength, halfSideLength),
-            new Vector2(-halfSideLength, halfSideLength)
-        ));
-    }
-
-    private PhysicsObject createCircle(Vector2 position) {
-        return new PhysicsObject(
-            position.x,
-            position.y,
-            newObjectStatic,
-            new CircleShape(circleRadius)
-        );
-    }
 }

@@ -18,9 +18,21 @@ class PhysicsWorldTest {
     }
 
     @Test
+    void createsShapesWithMassAndInertiaBasedOnTheirDimensions() {
+        PhysicsWorld world = new PhysicsWorld();
+        world.addSquare(0, 0, 2, false);
+        world.addCircle(0, 0, 2, false);
+
+        assertEquals(4, world.objects.get(0).mass, DELTA);
+        assertEquals(8.0 / 3.0, world.objects.get(0).momentOfInertia, DELTA);
+        assertEquals(4 * Math.PI, world.objects.get(1).mass, DELTA);
+        assertEquals(8 * Math.PI, world.objects.get(1).momentOfInertia, DELTA);
+    }
+
+    @Test
     void appliesGravityAndIntegratesDynamicObjects() {
         PhysicsWorld world = new PhysicsWorld();
-        PhysicsObject object = new PhysicsObject(1, 10, false);
+        PhysicsObject object = new PhysicsObject(1, 10, false, 1, 1);
         object.velocity = new Vector2(2, 3);
         object.angularVelocity = 1;
         world.objects.add(object);
@@ -35,8 +47,8 @@ class PhysicsWorldTest {
     @Test
     void appliesGravityToEveryDynamicObject() {
         PhysicsWorld world = new PhysicsWorld();
-        PhysicsObject first = new PhysicsObject(0, 0, false);
-        PhysicsObject second = new PhysicsObject(5, 5, false);
+        PhysicsObject first = new PhysicsObject(0, 0, false, 1, 1);
+        PhysicsObject second = new PhysicsObject(5, 5, false, 1, 1);
         world.objects.add(first);
         world.objects.add(second);
 
@@ -51,7 +63,7 @@ class PhysicsWorldTest {
     @Test
     void leavesStaticObjectsUnaffectedByGravity() {
         PhysicsWorld world = new PhysicsWorld();
-        PhysicsObject object = new PhysicsObject(1, 10, true);
+        PhysicsObject object = new PhysicsObject(1, 10, true, 1, 1);
         object.velocity = new Vector2(2, 3);
         world.objects.add(object);
 
@@ -65,7 +77,7 @@ class PhysicsWorldTest {
     void usesConfiguredGravity() {
         PhysicsWorld world = new PhysicsWorld();
         world.gravity = new Vector2(4, 0);
-        PhysicsObject object = new PhysicsObject(0, 0, false);
+        PhysicsObject object = new PhysicsObject(0, 0, false, 1, 1);
         world.objects.add(object);
 
         world.step(0.25);

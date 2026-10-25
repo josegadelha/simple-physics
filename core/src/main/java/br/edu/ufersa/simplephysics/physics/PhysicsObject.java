@@ -17,10 +17,6 @@ public class PhysicsObject {
     public double momentOfInertia;
     public final List<PhysicsShape> shapes;
 
-    public PhysicsObject(double x, double y, boolean isStatic, PhysicsShape... shapes) {
-        this(x, y, isStatic, 1.0, 1.0, shapes);
-    }
-
     public PhysicsObject(
         double x,
         double y,

@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PhysicsWorld {
+    public static final double MAX_OBJECT_DISTANCE = 1000.0;
+
     public List<PhysicsObject> objects;
     public Vector2 gravity;
 
@@ -70,5 +72,8 @@ public class PhysicsWorld {
         for (PhysicsObject object : objects) {
             object.step(dt);
         }
+
+        // Remove objects that are too far away.
+        objects.removeIf(object -> Math.hypot(object.position.x, object.position.y) > MAX_OBJECT_DISTANCE);
     }
 }

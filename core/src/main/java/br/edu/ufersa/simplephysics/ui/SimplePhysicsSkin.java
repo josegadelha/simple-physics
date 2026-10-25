@@ -32,6 +32,8 @@ public final class SimplePhysicsSkin {
     private static final Color BUTTON_OVER = Color.valueOf("464646");
     private static final Color BUTTON_DOWN = Color.valueOf("262626");
     private static final Color TEXT_SELECTION = Color.valueOf("686868");
+    private static final Color SCROLLBAR_TRACK = Color.valueOf("262626");
+    private static final Color SCROLLBAR_KNOB = Color.valueOf("3a3a3a");
 
     private static final int CORNER_RADIUS = 10;
     private static final int PATCH_SIZE = CORNER_RADIUS * 2 + 4;
@@ -58,6 +60,18 @@ public final class SimplePhysicsSkin {
 
         // Panel background.
         skin.add("panel", rounded(skin, "panel-texture", PANEL, CORNER_RADIUS));
+        Drawable scrollbarTrack = rounded(skin, "scrollbar-track-texture", SCROLLBAR_TRACK, 4);
+        Drawable scrollbarKnob = rounded(skin, "scrollbar-knob-texture", SCROLLBAR_KNOB, 4);
+        skin.add(
+            "scrollbar-track",
+            scrollbarTrack,
+            Drawable.class
+        );
+        skin.add(
+            "scrollbar-knob",
+            scrollbarKnob,
+            Drawable.class
+        );
 
         // Button style.
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();

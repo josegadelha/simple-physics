@@ -4,8 +4,8 @@ import br.edu.ufersa.simplephysics.graphic.ExtendedShapeRenderer;
 import br.edu.ufersa.simplephysics.graphic.GridRenderer;
 import br.edu.ufersa.simplephysics.graphic.ImpulseArrowRenderer;
 import br.edu.ufersa.simplephysics.graphic.PhysicsShapeRenderer;
-import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
+import br.edu.ufersa.simplephysics.ui.ScrollablePanel;
 import br.edu.ufersa.simplephysics.ui.SimplePhysicsSkin;
 import br.edu.ufersa.simplephysics.ui.SimulationButtons;
 import com.badlogic.gdx.Gdx;
@@ -17,8 +17,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -89,15 +87,25 @@ public class ExampleScreen extends ScreenAdapter {
                 WORLD_UNITS_PER_PIXEL
             );
 
-        inputMultiplexer = new InputMultiplexer();
-        inputMultiplexer.addProcessor(panelStage);
-        inputMultiplexer.addProcessor(simulationInputController.getInputProcessor());
-        Gdx.input.setInputProcessor(inputMultiplexer);
-
         panelTable = new Table(skin);
-        panelTable.setFillParent(true);
-        panelTable.top().padTop(24);
-        panelStage.addActor(panelTable);
+        panelTable.top();
+        Table panelLayout = new Table(skin);
+        panelLayout.setFillParent(true);
+        panelStage.addActor(panelLayout);
+
+        ScrollablePanel settingsPanel = new ScrollablePanel(
+            panelStage,
+            panelViewport,
+            panelTable,
+            skin,
+            simulationInputController.getInputProcessor()
+        );
+        panelLayout.add(settingsPanel.getScrollPane())
+            .width(PANEL_WIDTH)
+            .expandY()
+            .fillY()
+            .padTop(24)
+            .padBottom(24);
 
         squareButton = SimulationButtons.createSquareButton(skin, simulationInputController);
         circleButton = SimulationButtons.createCircleButton(skin, simulationInputController);
@@ -152,6 +160,12 @@ public class ExampleScreen extends ScreenAdapter {
         panelTable.add(physicsOptionsTable).width(300).height(200);
         panelTable.row().padTop(12);
         panelTable.add(cameraOptionsTable).width(300).height(172);
+
+        inputMultiplexer = new InputMultiplexer();
+        inputMultiplexer.addProcessor(settingsPanel.getInputProcessor());
+        inputMultiplexer.addProcessor(panelStage);
+        inputMultiplexer.addProcessor(simulationInputController.getInputProcessor());
+        Gdx.input.setInputProcessor(inputMultiplexer);
     }
 
     @Override

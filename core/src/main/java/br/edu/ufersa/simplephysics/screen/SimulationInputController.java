@@ -19,12 +19,19 @@ public class SimulationInputController {
     private static final float ZOOM_STEP = 1.1f;
     private static final double DEFAULT_CIRCLE_RADIUS = 0.25;
     private static final double DEFAULT_SQUARE_SIDE_LENGTH = 0.5;
+    private static final double EXPONENTIAL_IMPULSE_RATE = 0.1;
+    private static final ImpulseResponse IMPULSE_RESPONSE = ImpulseResponse.LINEAR;
 
     public enum Tool {
         NONE,
         CREATE_SQUARE,
         CREATE_CIRCLE,
         APPLY_IMPULSE
+    }
+
+    private enum ImpulseResponse {
+        LINEAR,
+        EXPONENTIAL
     }
 
     private final ScreenViewport viewport;
@@ -113,6 +120,17 @@ public class SimulationInputController {
         }
     }
 
+    public boolean isCameraFollowEnabled() {
+        return cameraFollowEnabled;
+    }
+
+    public void resetCameraToOrigin() {
+        setCameraFollowEnabled(false);
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.update();
+    }
+
     public boolean isFollowingObject() {
         return followedObject != null;
     }
@@ -122,6 +140,10 @@ public class SimulationInputController {
     }
 
     public void updateCameraFollow() {
+        if (followedObject != null && !world.objects.contains(followedObject)) {
+            followedObject = null;
+            cameraFollowEnabled = false;
+        }
         if (cameraFollowEnabled && followedObject != null) {
             camera.position.x = (float) followedObject.position.x;
             camera.position.y = (float) followedObject.position.y;
@@ -196,7 +218,8 @@ public class SimulationInputController {
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
                 if (draggedPhysicsObject != null) {
-                    impulseEnd = getMouseWorldPosition(screenX, screenY);
+                    Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
+                    impulseEnd = impulseStart.add(getImpulseForDrag(drag));
                     return true;
                 }
 
@@ -219,12 +242,12 @@ public class SimulationInputController {
             @Override
             public boolean touchUp(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT && draggedPhysicsObject != null) {
-                    impulseEnd = getMouseWorldPosition(screenX, screenY);
-                    Vector2 impulse = impulseEnd.subtract(impulseStart);
-                    double magnitude = impulse.length();
-                    if (magnitude > 0) {
+                    Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
+                    Vector2 impulse = getImpulseForDrag(drag);
+                    impulseEnd = impulseStart.add(impulse);
+                    if (impulse.length() > 0) {
                         // Apply the impulse where the drag began.
-                        draggedPhysicsObject.applyImpulse(impulse.scale(magnitude), impulseStart);
+                        draggedPhysicsObject.applyImpulse(impulse, impulseStart);
                     }
 
                     // Reset the impulse drag state.
@@ -272,6 +295,17 @@ public class SimulationInputController {
         com.badlogic.gdx.math.Vector2 worldPosition =
             viewport.unproject(new com.badlogic.gdx.math.Vector2(screenX, screenY));
         return new Vector2(worldPosition.x, worldPosition.y);
+    }
+
+    private Vector2 getImpulseForDrag(Vector2 drag) {
+        double magnitude = drag.length();
+        if (magnitude == 0 || IMPULSE_RESPONSE == ImpulseResponse.LINEAR) {
+            return drag;
+        }
+
+        double responseMagnitude = Math.expm1(EXPONENTIAL_IMPULSE_RATE * magnitude)
+            / EXPONENTIAL_IMPULSE_RATE;
+        return drag.scale(responseMagnitude / magnitude);
     }
 
     private PhysicsObject findObjectAt(Vector2 worldPosition) {

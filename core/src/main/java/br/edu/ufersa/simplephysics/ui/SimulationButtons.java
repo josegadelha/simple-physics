@@ -301,6 +301,20 @@ public final class SimulationButtons {
         return button;
     }
 
+    public static TextButton createResetCameraButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        TextButton button = new TextButton("Reset camera", skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                inputController.resetCameraToOrigin();
+            }
+        });
+        return button;
+    }
+
     // Makes any supplied tools exclusive; an optional follow button clears the selected tool.
     public static void configureSimulationToolGroup(
         TextButton followObjectButton,
@@ -352,7 +366,11 @@ public final class SimulationButtons {
         TextButton button,
         SimulationInputController inputController
     ) {
-        if (!button.isChecked()) {
+        boolean followEnabled = inputController.isCameraFollowEnabled();
+        if (button.isChecked() != followEnabled) {
+            button.setChecked(followEnabled);
+        }
+        if (!followEnabled) {
             button.setText("Follow: OFF");
         } else if (inputController.isFollowingObject()) {
             button.setText("Tracking");

@@ -62,6 +62,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final TextButton gravityButton;
     private final TextButton impulseButton;
     private final TextButton followObjectButton;
+    private final TextButton resetCameraButton;
 
     public ExampleScreen() {
         panelCamera = new OrthographicCamera();
@@ -104,6 +105,7 @@ public class ExampleScreen extends ScreenAdapter {
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
         followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
+        resetCameraButton = SimulationButtons.createResetCameraButton(skin, simulationInputController);
         Table shapeSizeControl = SimulationButtons.createShapeSizeControl(
             skin,
             squareButton,
@@ -142,12 +144,14 @@ public class ExampleScreen extends ScreenAdapter {
         cameraOptionsTable.add(cameraTitle).center();
         cameraOptionsTable.row().padTop(12);
         cameraOptionsTable.add(followObjectButton).width(300).height(50);
+        cameraOptionsTable.row().padTop(12);
+        cameraOptionsTable.add(resetCameraButton).width(300).height(50);
 
         panelTable.add(shapeOptionsTable).width(300).height(310);
         panelTable.row().padTop(12);
         panelTable.add(physicsOptionsTable).width(300).height(200);
         panelTable.row().padTop(12);
-        panelTable.add(cameraOptionsTable).width(300).height(110);
+        panelTable.add(cameraOptionsTable).width(300).height(172);
     }
 
     @Override

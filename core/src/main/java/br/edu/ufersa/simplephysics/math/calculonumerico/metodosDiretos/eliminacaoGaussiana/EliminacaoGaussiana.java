@@ -1,155 +1,141 @@
-package br.edu.ufersa.simplephysics.math.calculonumerico.metodosDiretos.eliminacaoGaussiana;
 
+package br.edu.ufersa.simplephysics.math.calculonumerico.metodosDiretos.eliminacaoGaussiana;
 
 public class EliminacaoGaussiana {
 
     private static final double EPS = 1e-12;
 
+    // Método de eliminação gaussiana com pivoteamento parcial
     public static double[] resolver(double[][] A, double[] b) {
 
         // Validar entradas
         validarEntradas(A, b);
 
         int n = A.length;
-        double escalaA = 0.0;
+        double escalaA = escalaA(A);
+        double tolerancia = EPS * escalaA;
 
-        // Calcular a escala da matriz A para determinar a tolerância
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                escalaA = Math.max(escalaA, Math.abs(A[i][j]));
-            }
-        }
-
-        if (escalaA == 0.0) {
-            if (todosZero(b, EPS)) {
+        // Verificar se a matriz A possui apenas zeros
+        if (escalaA == 0) {
+            if (todosZero(b, EPS * Math.max(1.0, escalaB(b)))) {
                 throw new ArithmeticException(
-                    "Sistema com infinitas solucoes: "
-                    + "todos os coeficientes sao zero."
+                    "O sistema possui infinitas solucoes."
                 );
             }
 
             throw new ArithmeticException(
-                "Sistema sem solucao: os coeficientes "
-                + "sao zero, mas existe termo independente nao nulo."
+                "O sistema nao possui solucao."
             );
         }
 
-        double tolerancia = EPS * escalaA;
+        // Criar a matriz aumentada [A | b]
+        double[][] M = new double[n][n + 1];
 
-        double[][] aug = new double[n][n + 1];
-
-        // Criar a matriz aumentada [A | b].
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                aug[i][j] = A[i][j];
+                M[i][j] = A[i][j];
             }
 
-            aug[i][n] = b[i];
+            M[i][n] = b[i];
         }
 
-        // Eliminação Gaussiana com pivotamento parcial.
+        // Eliminar os elementos abaixo dos pivôs
         int linhaPivo = 0;
 
-        for (int coluna = 0; coluna < n; coluna++) {
+        for (int k = 0; k < n; k++) {
 
-            int p = linhaPivo;
+            // Procurar o maior pivô em módulo na coluna atual
+            int melhorLinha = linhaPivo;
 
-            // Encontrar o pivô na coluna atual.
             for (int i = linhaPivo + 1; i < n; i++) {
-                if (Math.abs(aug[i][coluna])
-                        > Math.abs(aug[p][coluna])) {
-                    p = i;
+                if (Math.abs(M[i][k]) >
+                    Math.abs(M[melhorLinha][k])) {
+                    melhorLinha = i;
                 }
             }
 
-            // Se o pivô é muito pequeno, o sistema pode não ter solução única
-            if (Math.abs(aug[p][coluna]) <= tolerancia) {
+            // Se não houver pivô válido nesta coluna, passar para a próxima
+            if (Math.abs(M[melhorLinha][k]) <= tolerancia) {
                 continue;
             }
 
-            // Trocar a linha do pivô com a linha atual
-            if (p != linhaPivo) {
-                double[] temp = aug[linhaPivo];
-                aug[linhaPivo] = aug[p];
-                aug[p] = temp;
+            // PIVOTEAMENTO PARCIAL: trocar linhas, se necessário
+            if (melhorLinha != linhaPivo) {
+
+                // AVISO: informa quando o pivoteamento é utilizado
+                System.out.printf(
+                    "Pivoteamento parcial utilizado na coluna %d: "
+                    + "trocando as linhas %d e %d.%n",
+                    k + 1, linhaPivo + 1, melhorLinha + 1
+                );
+
+                double[] temp = M[linhaPivo];
+                M[linhaPivo] = M[melhorLinha];
+                M[melhorLinha] = temp;
             }
 
-            // Eliminar as entradas abaixo do pivô na coluna atual
+            // Eliminar os elementos abaixo do pivô
             for (int i = linhaPivo + 1; i < n; i++) {
 
-                double m = aug[i][coluna] / aug[linhaPivo][coluna];
+                double fator = M[i][k] / M[linhaPivo][k];
 
-                aug[i][coluna] = 0.0;
+                M[i][k] = 0;
 
-                // Atualizar os elementos restantes da linha
-                for (int k = coluna + 1; k <= n; k++) {
-                    aug[i][k] -= m * aug[linhaPivo][k];
+                for (int j = k + 1; j <= n; j++) {
+                    M[i][j] -= fator * M[linhaPivo][j];
                 }
             }
 
             linhaPivo++;
         }
 
-        // Verificar se o sistema é consistente e se há solução única
+        // Verificar se o sistema é inconsistente
+        double toleranciaB = EPS * Math.max(1.0, escalaB(b));
+
         for (int i = 0; i < n; i++) {
 
-            boolean coeficientesZero = true;
+            boolean linhaZero = true;
 
-            // Verificar se todos os coeficientes da linha são zero
             for (int j = 0; j < n; j++) {
-                if (Math.abs(aug[i][j]) > tolerancia) {
-                    coeficientesZero = false;
+                if (Math.abs(M[i][j]) > tolerancia) {
+                    linhaZero = false;
                     break;
                 }
             }
 
-            // Se todos os coeficientes são zero, mas o termo independente não é, o sistema não tem solução
-            if (coeficientesZero
-                    && Math.abs(aug[i][n]) > EPS * escalaB(b)) {
+            if (linhaZero && Math.abs(M[i][n]) > toleranciaB) {
                 throw new ArithmeticException(
-                    "Sistema sem solucao: foi encontrada "
-                    + "uma linha contraditoria."
+                    "O sistema nao possui solucao."
                 );
             }
         }
 
-        // Se a linha do pivô não alcançou o final, o sistema tem infinitas soluções
+        // Se faltarem pivôs, o sistema consistente possui infinitas soluções
         if (linhaPivo < n) {
             throw new ArithmeticException(
-                "Sistema com infinitas solucoes: "
-                + "a matriz dos coeficientes nao tem posto completo."
+                "O sistema possui infinitas solucoes."
             );
         }
 
+        // Resolver o sistema triangular por substituição retroativa
         double[] x = new double[n];
 
-        // Substituição regressiva para encontrar a solução
         for (int i = n - 1; i >= 0; i--) {
 
-            double soma = 0.0;
+            double soma = M[i][n];
 
-            // Calcular a soma dos produtos das variáveis já resolvidas
             for (int j = i + 1; j < n; j++) {
-                soma += aug[i][j] * x[j];
+                soma -= M[i][j] * x[j];
             }
 
-            double pivo = aug[i][i];
-
-            if (Math.abs(pivo) <= tolerancia) {
-                throw new ArithmeticException(
-                    "Pivo muito proximo de zero na substituicao."
-                );
-            }
-
-            // Calcular o valor da variável atual
-            x[i] = (aug[i][n] - soma) / pivo;
+            x[i] = soma / M[i][i];
         }
 
-        // Verificar se a solução contém valores NaN ou infinitos
-        for (int i = 0; i < n; i++) {
-            if (!Double.isFinite(x[i])) {
+        // Verificar se os resultados são números finitos
+        for (double valor : x) {
+            if (!Double.isFinite(valor)) {
                 throw new ArithmeticException(
-                    "A solucao gerou um valor NaN ou infinito."
+                    "O sistema produziu um resultado invalido."
                 );
             }
         }
@@ -157,34 +143,128 @@ public class EliminacaoGaussiana {
         return x;
     }
 
-    // Valida as entradas da matriz A e do vetor b
+    // Método de eliminação gaussiana sem pivoteamento parcial
+    public static double[] resolverSemPivoteamento(
+        double[][] A, double[] b
+    ) {
+
+        // Validar entradas
+        validarEntradas(A, b);
+
+        int n = A.length;
+        double escalaA = escalaA(A);
+        double tolerancia = EPS * escalaA;
+        double toleranciaB = EPS * Math.max(1.0, escalaB(b));
+
+        if (escalaA == 0) {
+            if (todosZero(b, toleranciaB)) {
+                throw new ArithmeticException(
+                    "O sistema possui infinitas solucoes."
+                );
+            }
+
+            throw new ArithmeticException(
+                "O sistema nao possui solucao."
+            );
+        }
+
+        // Criar a matriz aumentada [A | b]
+        double[][] M = new double[n][n + 1];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                M[i][j] = A[i][j];
+            }
+
+            M[i][n] = b[i];
+        }
+
+        // Eliminar os elementos abaixo da diagonal principal
+        for (int k = 0; k < n; k++) {
+
+            // Sem pivoteamento, o pivô será sempre o elemento diagonal
+            double pivo = M[k][k];
+
+            if (Math.abs(pivo) <= tolerancia) {
+                throw new ArithmeticException(
+                    "Pivo nulo ou muito proximo de zero na posicao "
+                    + k + ". O metodo sem pivotamento nao pode "
+                    + "continuar com este sistema."
+                );
+            }
+
+            // Eliminar os elementos abaixo do pivô
+            for (int i = k + 1; i < n; i++) {
+
+                double fator = M[i][k] / pivo;
+
+                M[i][k] = 0;
+
+                for (int j = k + 1; j <= n; j++) {
+                    M[i][j] -= fator * M[k][j];
+                }
+            }
+        }
+
+        // Verificar se o sistema é inconsistente
+        for (int i = 0; i < n; i++) {
+
+            boolean linhaZero = true;
+
+            for (int j = 0; j < n; j++) {
+                if (Math.abs(M[i][j]) > tolerancia) {
+                    linhaZero = false;
+                    break;
+                }
+            }
+
+            if (linhaZero && Math.abs(M[i][n]) > toleranciaB) {
+                throw new ArithmeticException(
+                    "O sistema nao possui solucao."
+                );
+            }
+        }
+
+        // Resolver o sistema triangular por substituição retroativa
+        double[] x = new double[n];
+
+        for (int i = n - 1; i >= 0; i--) {
+
+            double soma = M[i][n];
+
+            for (int j = i + 1; j < n; j++) {
+                soma -= M[i][j] * x[j];
+            }
+
+            x[i] = soma / M[i][i];
+
+            if (!Double.isFinite(x[i])) {
+                throw new ArithmeticException(
+                    "O sistema produziu um resultado invalido."
+                );
+            }
+        }
+
+        return x;
+    }
+
+    // Validar as dimensões e os valores das entradas
     private static void validarEntradas(double[][] A, double[] b) {
 
-        // Verifica se A e b são nulos
         if (A == null || b == null) {
             throw new IllegalArgumentException(
-                "A matriz A e o vetor b nao podem ser null."
+                "A matriz A e o vetor b nao podem ser nulos."
             );
         }
 
         int n = A.length;
 
-        // Verifica se A é uma matriz quadrada e se b tem o tamanho correto
-        if (n == 0) {
+        if (n == 0 || b.length != n) {
             throw new IllegalArgumentException(
-                "A matriz A nao pode ser vazia."
+                "As dimensoes da matriz e do vetor sao invalidas."
             );
         }
 
-        // Verifica se b tem o mesmo número de elementos que A tem de linhas
-        if (b.length != n) {
-            throw new IllegalArgumentException(
-                "O vetor b deve ter o mesmo numero de elementos "
-                + "que A tem de linhas."
-            );
-        }
-
-        // Verifica se cada linha de A tem o mesmo número de colunas que A tem de linhas
         for (int i = 0; i < n; i++) {
 
             if (A[i] == null || A[i].length != n) {
@@ -193,27 +273,41 @@ public class EliminacaoGaussiana {
                 );
             }
 
-            if (!Double.isFinite(b[i])) {
-                throw new IllegalArgumentException(
-                    "O vetor b nao pode conter NaN ou infinito."
-                );
-            }
-
             for (int j = 0; j < n; j++) {
                 if (!Double.isFinite(A[i][j])) {
                     throw new IllegalArgumentException(
-                        "A matriz A nao pode conter NaN ou infinito."
+                        "A matriz A contem valores invalidos."
                     );
                 }
+            }
+
+            if (!Double.isFinite(b[i])) {
+                throw new IllegalArgumentException(
+                    "O vetor b contem valores invalidos."
+                );
             }
         }
     }
 
-    // Calcula a maior magnitude do vetor b
-    private static double escalaB(double[] b) {
-        double escala = 0.0;
+    // Calcular o maior valor absoluto da matriz A
+    private static double escalaA(double[][] A) {
 
-        // Calcula a maior magnitude do vetor b
+        double escala = 0;
+
+        for (double[] linha : A) {
+            for (double valor : linha) {
+                escala = Math.max(escala, Math.abs(valor));
+            }
+        }
+
+        return escala;
+    }
+
+    // Calcular o maior valor absoluto do vetor b
+    private static double escalaB(double[] b) {
+
+        double escala = 0;
+
         for (double valor : b) {
             escala = Math.max(escala, Math.abs(valor));
         }
@@ -221,11 +315,11 @@ public class EliminacaoGaussiana {
         return escala;
     }
 
-    // Verifica se todos os elementos do vetor b são zero dentro de uma tolerância
-    private static boolean todosZero(double[] b, double tol) {
-        
-        for (double valor : b) {
-            if (Math.abs(valor) > tol) {
+    // Verificar se todos os elementos do vetor são próximos de zero
+    private static boolean todosZero(double[] vetor, double tolerancia) {
+
+        for (double valor : vetor) {
+            if (Math.abs(valor) > tolerancia) {
                 return false;
             }
         }
@@ -233,11 +327,10 @@ public class EliminacaoGaussiana {
         return true;
     }
 
-    // Exibe uma matriz
-    public static void imprimirMatriz(String nome, double[][] M) {
-        System.out.println(nome + ":");
+    // Imprimir uma matriz
+    private static void imprimirMatriz(double[][] A) {
 
-        for (double[] linha : M) {
+        for (double[] linha : A) {
             for (double valor : linha) {
                 System.out.printf("%10.4f ", valor);
             }
@@ -246,14 +339,16 @@ public class EliminacaoGaussiana {
         }
     }
 
-    // Exibe um vetor
-    public static void imprimirVetor(String nome, double[] v) {
-        System.out.print(nome + ": [");
+    // Imprimir um vetor
+    private static void imprimirVetor(double[] vetor) {
 
-        for (int i = 0; i < v.length; i++) {
-            System.out.printf("%.4f", v[i]);
+        System.out.print("[");
 
-            if (i < v.length - 1) {
+        for (int i = 0; i < vetor.length; i++) {
+
+            System.out.printf("%.4f", vetor[i]);
+
+            if (i < vetor.length - 1) {
                 System.out.print(", ");
             }
         }
@@ -261,8 +356,7 @@ public class EliminacaoGaussiana {
         System.out.println("]");
     }
 
-    // ----------------------------------------------------------
-
+    // Executar os testes dos dois métodos
     public static void main(String[] args) {
 
         double[][] A = {
@@ -272,16 +366,37 @@ public class EliminacaoGaussiana {
 
         double[] b = {2, 3};
 
+        System.out.println("\n=== COM PIVOTEAMENTO PARCIAL ===");
+        System.out.println("Matriz A original:");
+        imprimirMatriz(A);
+
+        System.out.print("Vetor b original: ");
+        imprimirVetor(b);
+
         try {
-            double[] x = resolver(A, b);
+            double[] solucao = resolver(A, b);
 
-            System.out.println("Eliminacao Gaussiana");
-            imprimirMatriz("Matriz A original", A);
-            imprimirVetor("Vetor b original", b);
-            imprimirVetor("Solucao x", x);
+            System.out.print("Solucao x: ");
+            imprimirVetor(solucao);
 
-        } catch (IllegalArgumentException | ArithmeticException e) {
+        } catch (ArithmeticException | IllegalArgumentException e) {
             System.out.println("Erro: " + e.getMessage());
+        }
+
+        System.out.println();
+
+        System.out.println("\n=== SEM PIVOTEAMENTO PARCIAL ===");
+
+        try {
+            double[] solucao = resolverSemPivoteamento(A, b);
+
+            System.out.print("Solucao x: ");
+            imprimirVetor(solucao);
+            System.out.println();
+
+        } catch (ArithmeticException | IllegalArgumentException e) {
+            System.out.println("Erro: " + e.getMessage());
+            System.out.println();
         }
     }
 }

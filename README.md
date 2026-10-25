@@ -1,16 +1,23 @@
 # Simple Physics
 
-A small Java/libGDX desktop physics simulation. Choose **Create square** or **Create circle**, then click in the simulation area to add shapes and watch them fall under gravity. Use **Gravity** in the physics settings to toggle gravity.
+A small Java/libGDX desktop physics demo for creating and interacting with simple physics objects.
 
-Navigate the simulation with these controls:
+## Object settings
 
-- Drag with the middle mouse button to pan the camera and explore the grid.
-- Scroll the mouse wheel over the simulation area to zoom in or out.
+- Select **Create square** or **Create circle**, then click in the simulation area to place an object.
+- Set the square side length or circle radius before creating objects. Enter a value with the keyboard or adjust it using the arrows.
+- Enable **Is static** to make newly created objects immovable.
 
-Run with Java 21:
+## Physics settings
 
-```sh
-./gradlew lwjgl3:run
-```
+- Toggle **Gravity** to turn gravity on or off.
+- Select **Apply impulse**, then drag from a dynamic object to apply an impulse. The arrow previews the impulse direction and magnitude.
 
-On Windows, use `gradlew.bat lwjgl3:run`.
+## Camera settings
+
+- Select **Follow**, then click an object to track it with the camera. If the followed object is removed, Follow turns off.
+- Select **Reset camera** to return the view to the world origin and turn off Follow.
+- Drag with the middle mouse button over the simulation to pan the camera.
+- Scroll the mouse wheel over the simulation to zoom. Over the settings panel, the wheel scrolls the settings instead.
+
+Objects more than 1,000 world units from the origin are removed automatically.

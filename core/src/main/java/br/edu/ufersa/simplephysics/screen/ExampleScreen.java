@@ -59,6 +59,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final TextButton staticButton;
     private final TextButton gravityButton;
     private final TextButton impulseButton;
+    private final TextButton impulseScalingButton;
     private final TextButton followObjectButton;
     private final TextButton resetCameraButton;
 
@@ -112,6 +113,7 @@ public class ExampleScreen extends ScreenAdapter {
         staticButton = SimulationButtons.createStaticButton(skin, simulationInputController);
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
+        impulseScalingButton = SimulationButtons.createImpulseScalingButton(skin, simulationInputController);
         followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
         resetCameraButton = SimulationButtons.createResetCameraButton(skin, simulationInputController);
         Table shapeSizeControl = SimulationButtons.createShapeSizeControl(
@@ -146,6 +148,8 @@ public class ExampleScreen extends ScreenAdapter {
         physicsOptionsTable.add(gravityButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(impulseScalingButton).width(300).height(50);
 
         cameraOptionsTable = new Table(skin);
         Label cameraTitle = new Label("Camera Settings", skin);

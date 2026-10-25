@@ -19,8 +19,8 @@ public class SimulationInputController {
     private static final float ZOOM_STEP = 1.1f;
     private static final double DEFAULT_CIRCLE_RADIUS = 0.25;
     private static final double DEFAULT_SQUARE_SIDE_LENGTH = 0.5;
-    private static final double EXPONENTIAL_IMPULSE_RATE = 0.1;
-    private static final ImpulseResponse IMPULSE_RESPONSE = ImpulseResponse.LINEAR;
+    private static final double EXPONENTIAL_IMPULSE_RATE = 0.5;
+    private ImpulseScaling impulseScaling = ImpulseScaling.LINEAR;
 
     public enum Tool {
         NONE,
@@ -29,7 +29,7 @@ public class SimulationInputController {
         APPLY_IMPULSE
     }
 
-    private enum ImpulseResponse {
+    public enum ImpulseScaling {
         LINEAR,
         EXPONENTIAL
     }
@@ -103,6 +103,16 @@ public class SimulationInputController {
 
     public boolean isApplyingImpulse() {
         return applyingImpulse;
+    }
+
+    public ImpulseScaling getImpulseScaling() {
+        return impulseScaling;
+    }
+
+    public void toggleImpulseScaling() {
+        impulseScaling = impulseScaling == ImpulseScaling.LINEAR
+            ? ImpulseScaling.EXPONENTIAL
+            : ImpulseScaling.LINEAR;
     }
 
     public Vector2 getImpulseStart() {
@@ -218,8 +228,7 @@ public class SimulationInputController {
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
                 if (draggedPhysicsObject != null) {
-                    Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
-                    impulseEnd = impulseStart.add(getImpulseForDrag(drag));
+                    impulseEnd = getMouseWorldPosition(screenX, screenY);
                     return true;
                 }
 
@@ -244,7 +253,6 @@ public class SimulationInputController {
                 if (button == Input.Buttons.LEFT && draggedPhysicsObject != null) {
                     Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
                     Vector2 impulse = getImpulseForDrag(drag);
-                    impulseEnd = impulseStart.add(impulse);
                     if (impulse.length() > 0) {
                         // Apply the impulse where the drag began.
                         draggedPhysicsObject.applyImpulse(impulse, impulseStart);
@@ -299,7 +307,7 @@ public class SimulationInputController {
 
     private Vector2 getImpulseForDrag(Vector2 drag) {
         double magnitude = drag.length();
-        if (magnitude == 0 || IMPULSE_RESPONSE == ImpulseResponse.LINEAR) {
+        if (magnitude == 0 || impulseScaling == ImpulseScaling.LINEAR) {
             return drag;
         }
 

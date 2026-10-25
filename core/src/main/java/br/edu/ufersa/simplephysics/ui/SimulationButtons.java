@@ -286,6 +286,31 @@ public final class SimulationButtons {
         );
     }
 
+    public static TextButton createImpulseScalingButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        TextButton button = new TextButton(getImpulseScalingLabel(inputController), skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                inputController.toggleImpulseScaling();
+                button.setText(getImpulseScalingLabel(inputController));
+            }
+        });
+        return button;
+    }
+
+    private static String getImpulseScalingLabel(
+        SimulationInputController inputController
+    ) {
+        return "Impulse scaling: "
+            + (inputController.getImpulseScaling()
+                == SimulationInputController.ImpulseScaling.LINEAR
+                    ? "Linear"
+                    : "Exponential");
+    }
+
     // Creates a toggle button that lets the next simulation click choose the camera target.
     public static TextButton createFollowObjectButton(
         Skin skin,

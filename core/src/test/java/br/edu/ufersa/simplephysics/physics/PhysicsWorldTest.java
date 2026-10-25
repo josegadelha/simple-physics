@@ -74,6 +74,52 @@ class PhysicsWorldTest {
     }
 
     @Test
+    void removesObjectsBeyondTheWorldDistanceLimit() {
+        PhysicsWorld world = new PhysicsWorld();
+        PhysicsObject withinLimit = new PhysicsObject(
+            PhysicsWorld.MAX_OBJECT_DISTANCE,
+            0,
+            true,
+            1,
+            1
+        );
+        PhysicsObject outsideLimit = new PhysicsObject(
+            PhysicsWorld.MAX_OBJECT_DISTANCE + 1,
+            0,
+            true,
+            1,
+            1
+        );
+        PhysicsObject nonFinite = new PhysicsObject(Double.NaN, 0, true, 1, 1);
+        world.objects.add(withinLimit);
+        world.objects.add(outsideLimit);
+        world.objects.add(nonFinite);
+
+        world.step(0);
+
+        assertEquals(1, world.objects.size());
+        assertTrue(world.objects.contains(withinLimit));
+    }
+
+    @Test
+    void removesObjectsThatMoveBeyondTheWorldDistanceLimit() {
+        PhysicsWorld world = new PhysicsWorld();
+        PhysicsObject object = new PhysicsObject(
+            PhysicsWorld.MAX_OBJECT_DISTANCE - 1,
+            0,
+            false,
+            1,
+            1
+        );
+        object.velocity = new Vector2(2, 0);
+        world.objects.add(object);
+
+        world.step(1);
+
+        assertTrue(world.objects.isEmpty());
+    }
+
+    @Test
     void usesConfiguredGravity() {
         PhysicsWorld world = new PhysicsWorld();
         world.gravity = new Vector2(4, 0);

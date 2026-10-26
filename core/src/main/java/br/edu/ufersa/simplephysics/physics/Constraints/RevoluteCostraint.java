@@ -10,14 +10,17 @@ public class RevoluteCostraint extends Constraint {
     public double beta;
     public Vector2 worldA, worldB;
     public double[][] K = {{0, 0}, {0, 0}};
+
     //rA e rB = vetores raio, ponto que vai do centro de massa do corpo até
     // o ponto de ancoragem
     public Vector2 rB, rA = new Vector2(0, 0);
     public Vector2 localA, localB;
+
     //invMass = massas inversas
     //invI = inércia inversa
     //Se um corpo for estático, sua massa e inércia = 0
     public double invMassA, invMassB, invIA, invIB;
+
     //Limite de ângulos inferior e superior, erro de ângulo e ângulo atual
     public Double lowerAngleLimit, upperAngleLimit, angleViolation, currentAngle;
 
@@ -80,23 +83,24 @@ public class RevoluteCostraint extends Constraint {
         }
     }
 
-    public void solve(double dt){
-        Vector2 velB = this.bodyB.velocity.add(rB.crossSv(this.bodyB.angularVelocity));
+    //Método que corrige erros de velocidade, posição, motores e limites angulares
+    @Override
+    public void solve(double dt, Object settings){
+        //Se não tiver configuração já feita, usa a configuração global
+        ConstraintSettingsModel cs = (this.constraintSettings != null) ? (ConstraintSettingsModel) this.constraintSettings : (ConstraintSettingsModel) settings;
 
-        //Erro de velocidade
-        Vector2 Cdot = velB.subtract(this.worldA);
+        //Mantém os pontos de ancoragem colados
+        solvePointConstraint(dt, cs);
 
-        //Erro posicional
-        Vector2 C = this.worldB.subtract(this.worldA);
+        //MÉTODOS QUE AINDA NÃO EXISTEM ABAIXO!!
+        //Aplica força de rotação se um motor estiver ativo
+        solveMotor(dt);
 
-        //Termo bias
-        Vector2 bias = C.scale(this.beta / dt);
-
-        //Impulso
-        Vector2 impulse = Mat2x2.mat2x2Solve(this.K, Cdot.add(bias).scale(-1));
+        //Verifica se rotação entre os corpos ultrapassou os limites angulares
+        solveAngleLimits(dt, cs);
     }
 
-    public void solvePointConstraint(){
+    public void solvePointConstraint(double dt, ConstraintSettingsModel cs){
         //Elementos da matriz K (Matriz de massa efetiva)
         //Massas dos corpos A e B
         double mA = this.invMassA;

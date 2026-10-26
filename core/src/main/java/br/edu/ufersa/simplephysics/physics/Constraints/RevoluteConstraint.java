@@ -1,5 +1,6 @@
 package br.edu.ufersa.simplephysics.physics.Constraints;
 
+import br.edu.ufersa.simplephysics.math.SoftParams;
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 
@@ -134,5 +135,39 @@ public class RevoluteConstraint extends Constraint {
         this.K[0][1] = -rA.y * rA.x * iA - rB.y * rB.x * iB;
         this.K[1][0] = this.K[0][1];
         this.K[1][1] = mA + mB + rA.x * rA.x * iA + rB.x * rB.x * iB;
+
+        //Calcula velocidade linear: velocidade do centro de massa + velocidade da rotação
+        // * raio
+        Vector2 velA = this.bodyA.velocity.add(rA.crossProductScalarVector(this.bodyA.angularVelocity));
+        Vector2 velB = this.bodyB.velocity.add(rB.crossProductScalarVector(this.bodyB.angularVelocity));
+
+        //O objetivo dos dois erros abaixo (C' e C) é permanecer zero para garantir que
+        //os dois corpos em questão estejam colados
+        //Erro de velocidade: Velocidade do ponto A - velocidade do ponto B
+        Vector2 Cdot = velB.subtract(velA);
+
+        //Erro de posição: distância entre o ponto A e B
+        Vector2 C = this.worldB.subtract(this.worldA);
+
+        //Variáveis que vão corrigir o erro de posição, utiliza Estabilização
+        //de Baumgarte ou Soft, depende do modo escolhido
+        Vector2 bias = new Vector2(0, 0);
+        double massScale = 1.0;
+        double impulseScale = 0.0;
+
+        //Se for pelo Baumgarte, o bias calcula a divisão entre o erro de posição
+        //e o delta passado no parâmetro
+        if("baumgarte".equals(cs.mode)){
+            bias = C.scale(cs.baumgarteFactor / dt);
+        } else if ("soft".equals(cs.mode)) {
+            double maxHertz = 0.25 / dt;
+            double hz = Math.min(cs.jointSoft.hertz, maxHertz);
+            SoftParams soft = SoftParams.getSoftConstraintParams(hz, cs.jointSoft.dampingRatio, dt);
+            bias = C.scale(soft.biasRate);
+            massScale = soft.massScale;
+            impulseScale = soft.impulseScale;
+        }
+
+
     }
 }

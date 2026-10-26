@@ -1,4 +1,4 @@
-package br.edu.ufersa.simplephysics.physics.friction;
+package br.edu.ufersa.simplephysics.physics.constraints;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;

@@ -15,6 +15,7 @@ public class PhysicsObject {
     public boolean isStatic;
     public double mass;
     public double momentOfInertia;
+    public double friction = 0.3;
     public final List<PhysicsShape> shapes;
 
     public PhysicsObject(double x, double y, boolean isStatic, PhysicsShape... shapes) {

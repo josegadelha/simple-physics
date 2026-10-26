@@ -1,10 +1,9 @@
 package br.edu.ufersa.simplephysics.physics.Constraints;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
-import br.edu.ufersa.simplephysics.math.Mat2x2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 
-public class RevoluteCostraint extends Constraint {
+public class RevoluteConstraint extends Constraint {
 
     //Variáveis que vão ser usadas
     public double beta;
@@ -24,12 +23,28 @@ public class RevoluteCostraint extends Constraint {
     //Limite de ângulos inferior e superior, erro de ângulo e ângulo atual
     public Double lowerAngleLimit, upperAngleLimit, angleViolation, currentAngle;
 
+    //Rigidez
+    public double stiffness;
+
     //Construtor da classe
     public RevoluteConstraint(PhysicsObject bodyA, PhysicsObject bodyB, Vector2 worldPoint, Double lowerAngleLimit, Double upperAngleLimit, double stiffness) {
         super(bodyA, bodyB);
         //WorldA, WorldB, WorldPoint = Pontos das juntas entre os corpos A e B
         this.localA = bodyA.worldToLocal(worldPoint);
         this.localB = bodyB.worldToLocal(worldPoint);
+
+        //Limites angulares inferior e superior
+        this.lowerAngleLimit = lowerAngleLimit;
+        this.upperAngleLimit = upperAngleLimit;
+
+        //Rigidez
+        this.stiffness = stiffness;
+
+        //Inicializa os valores das massas e inércias dos corpos A e B
+        this.invMassA = bodyA.isStatic ? 0 : 1.0 / bodyA.mass;
+        this.invMassB = bodyB.isStatic ? 0 : 1.0 / bodyB.mass;
+        this.invIA = bodyA.isStatic ? 0 : 1.0 / bodyA.momentOfInertia;
+        this.invIB = bodyB.isStatic ? 0 : 1.0 / bodyB.momentOfInertia;
     }
 
     //Método que atualiza as posições dos pontos de ancoragem dos dois corpos

@@ -1,8 +1,8 @@
 package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
-import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
-import br.edu.ufersa.simplephysics.physics.constraints.ConstraintSettingsModel;
+import br.edu.ufersa.simplephysics.physics.Constraints.Constraint;
+import br.edu.ufersa.simplephysics.physics.Constraints.ConstraintSettingsModel;
 import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
 import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
 

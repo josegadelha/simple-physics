@@ -2,7 +2,7 @@ package br.edu.ufersa.simplephysics.physics.constraints;
 
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 
-abstract class Constraint {
+public abstract class Constraint {
     public PhysicsObject bodyA;
     public PhysicsObject bodyB;
     public Object constraintSettings = null;

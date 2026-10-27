@@ -742,6 +742,158 @@ public class CollisionHelperTest {
         }
 
 
+        // Teste 23: um polígono completamente dentro de outro.
+        System.out.println("\nTESTE 23 - Polígono dentro de outro");
+
+        PhysicsObject polygonGrande = new PhysicsObject(
+            0, 0, false, 1, 1,
+            new ConvexPolygonShape(
+                new Vector2(-5, -5),
+                new Vector2(5, -5),
+                new Vector2(5, 5),
+                new Vector2(-5, 5)
+            )
+        );
+
+        PhysicsObject polygonPequeno = new PhysicsObject(
+            0, 0, false, 1, 1,
+            new ConvexPolygonShape(
+                new Vector2(-1, -1),
+                new Vector2(1, -1),
+                new Vector2(1, 1),
+                new Vector2(-1, 1)
+            )
+        );
+
+        CollisionData colisaoInterna =
+            CollisionHelper.checkCollision(
+                polygonGrande, polygonPequeno
+            );
+
+        if (colisaoInterna != null) {
+            System.out.println("Colisão detectada!");
+            System.out.println(
+                "Normal: (" + colisaoInterna.normal.x
+                    + ", " + colisaoInterna.normal.y + ")"
+            );
+            System.out.println(
+                "Penetração: " + colisaoInterna.penetration
+            );
+
+            if (Math.abs(colisaoInterna.penetration - 6.0) < 1e-9) {
+                System.out.println(
+                    "CORRETO: profundidade de penetração igual a 6.0."
+                );
+            } else {
+                System.out.println(
+                    "ATENÇÃO: esperava-se penetração igual a 6.0."
+                );
+            }
+        } else {
+            System.out.println(
+                "ERRO: colisão não detectada."
+            );
+        }
+
+
+        // Teste 24: polígono contido com centros diferentes.
+        System.out.println(
+            "\nTESTE 24 - Polígono dentro de outro com centros diferentes"
+        );
+
+        PhysicsObject polygonGrande24 = new PhysicsObject(
+            0, 0, false, 1, 1,
+            new ConvexPolygonShape(
+                new Vector2(-5, -5),
+                new Vector2(5, -5),
+                new Vector2(5, 5),
+                new Vector2(-5, 5)
+            )
+        );
+
+        PhysicsObject polygonPequeno24 = new PhysicsObject(
+            2, 0, false, 1, 1,
+            new ConvexPolygonShape(
+                new Vector2(-1, -1),
+                new Vector2(1, -1),
+                new Vector2(1, 1),
+                new Vector2(-1, 1)
+            )
+        );
+
+        CollisionData colisaoInterna24 =
+            CollisionHelper.checkCollision(
+                polygonGrande24, polygonPequeno24
+            );
+
+        if (colisaoInterna24 != null) {
+            System.out.println("Colisão detectada!");
+            System.out.println(
+                "Normal: (" + colisaoInterna24.normal.x
+                    + ", " + colisaoInterna24.normal.y + ")"
+            );
+            System.out.println(
+                "Penetração: " + colisaoInterna24.penetration
+            );
+
+            if (Math.abs(colisaoInterna24.penetration - 4.0) < 1e-9) {
+                System.out.println(
+                    "CORRETO: profundidade de penetração igual a 4.0."
+                );
+            } else {
+                System.out.println(
+                    "ATENÇÃO: esperava-se penetração igual a 4.0."
+                );
+            }
+        } else {
+            System.out.println(
+                "ERRO: colisão não detectada."
+            );
+        }
+
+
+        // Teste 25: contenção com a ordem dos objetos invertida.
+        System.out.println(
+            "\nTESTE 25 - Contenção com ordem dos objetos invertida"
+        );
+
+        CollisionData colisaoInvertida25 =
+            CollisionHelper.checkCollision(
+                polygonPequeno24, polygonGrande24
+            );
+
+        if (colisaoInvertida25 != null) {
+            System.out.println("Colisão detectada!");
+            System.out.println(
+                "Normal: (" + colisaoInvertida25.normal.x
+                    + ", " + colisaoInvertida25.normal.y + ")"
+            );
+            System.out.println(
+                "Penetração: " + colisaoInvertida25.penetration
+            );
+
+            boolean penetraçãoCorreta =
+                Math.abs(colisaoInvertida25.penetration - 4.0) < 1e-9;
+
+            boolean normalInvertida =
+                colisaoInvertida25.normal.x < -0.99
+                    && Math.abs(colisaoInvertida25.normal.y) < 1e-9;
+
+            if (penetraçãoCorreta && normalInvertida) {
+                System.out.println(
+                    "CORRETO: penetração consistente e normal invertida."
+                );
+            } else {
+                System.out.println(
+                    "ATENÇÃO: confira a penetração e a direção da normal."
+                );
+            }
+        } else {
+            System.out.println("ERRO: colisão não detectada.");
+        }
+
+
+
 
     }
 }

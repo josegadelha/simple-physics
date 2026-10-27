@@ -333,6 +333,7 @@ public final class CollisionHelper {
         return new double[] { min, max };
     }
 
+
     private static boolean testPolygonAxes(
         List<Vector2> verticesFrom,
         List<Vector2> verticesA,
@@ -358,18 +359,23 @@ public final class CollisionHelper {
             double[] projectionA = projectPolygon(verticesA, axis);
             double[] projectionB = projectPolygon(verticesB, axis);
 
-            double overlap = Math.min(projectionA[1], projectionB[1])
-                - Math.max(projectionA[0], projectionB[0]);
-
-            // Se houver separação neste eixo, não existe colisão.
-            if (overlap < -EPSILON) {
+            // Verifica se existe separação entre os intervalos.
+            if (projectionA[1] < projectionB[0] - EPSILON
+                || projectionB[1] < projectionA[0] - EPSILON) {
                 return false;
             }
+
+            // Calcula as duas distâncias possíveis para separar
+            // os intervalos, inclusive quando um está contido no outro.
+            double overlapA = projectionA[1] - projectionB[0];
+            double overlapB = projectionB[1] - projectionA[0];
+
+            double overlap = Math.min(overlapA, overlapB);
 
             // Pequenas diferenças numéricas são tratadas como contato.
             overlap = Math.max(0.0, overlap);
 
-            // Guarda o eixo de menor sobreposição.
+            // Guarda o eixo de menor profundidade de penetração.
             if (overlap < best[0]) {
                 best[0] = overlap;
                 best[1] = axis.x;
@@ -379,6 +385,7 @@ public final class CollisionHelper {
 
         return true;
     }
+
 
 
     private static CollisionData polygonToPolygon(

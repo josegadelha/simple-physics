@@ -5,6 +5,7 @@ import br.edu.ufersa.simplephysics.physics.collision.CollisionData;
 
 public class PhysicsWorldCollisionTest {
 
+
     public static void main(String[] args) {
 
         PhysicsWorld world = new PhysicsWorld();
@@ -12,42 +13,70 @@ public class PhysicsWorldCollisionTest {
         // Desativa a gravidade para deixar o teste previsível.
         world.gravity = new br.edu.ufersa.simplephysics.math.Vector2(0, 0);
 
-        // Dois círculos dinâmicos com raio 1.
-        world.addCircle(0, 0, 1, false);
-        world.addCircle(1.5, 0, 1, false);
+        // Quadrado grande, centralizado na origem.
+        PhysicsObject polygonGrande = new PhysicsObject(
+            0, 0, false, 1, 1,
+            new br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape(
+                new br.edu.ufersa.simplephysics.math.Vector2(-5, -5),
+                new br.edu.ufersa.simplephysics.math.Vector2(5, -5),
+                new br.edu.ufersa.simplephysics.math.Vector2(5, 5),
+                new br.edu.ufersa.simplephysics.math.Vector2(-5, 5)
+            )
+        );
 
-        // Atualiza o mundo e detecta as colisões.
-        world.step(0.016);
+        // Quadrado pequeno, inicialmente dentro do grande.
+        PhysicsObject polygonPequeno = new PhysicsObject(
+            2, 0, false, 1, 1,
+            new br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape(
+                new br.edu.ufersa.simplephysics.math.Vector2(-1, -1),
+                new br.edu.ufersa.simplephysics.math.Vector2(1, -1),
+                new br.edu.ufersa.simplephysics.math.Vector2(1, 1),
+                new br.edu.ufersa.simplephysics.math.Vector2(-1, 1)
+            )
+        );
 
-        System.out.println("Quantidade de objetos: " + world.objects.size());
-        System.out.println("Colisões detectadas: " + world.collisions.size());
+        world.objects.add(polygonGrande);
+        world.objects.add(polygonPequeno);
 
-        if (!world.collisions.isEmpty()) {
+        System.out.println("TESTE 26 - Resolução física de polígonos contidos");
+        System.out.println(
+            "Posição inicial do grande: " + polygonGrande.position
+        );
+        System.out.println(
+            "Posição inicial do pequeno: " + polygonPequeno.position
+        );
 
+        // Executa vários passos para observar a correção de posição.
+        for (int i = 0; i < 60; i++) {
+            world.step(0.016);
+        }
+
+        System.out.println(
+            "Posição final do grande: " + polygonGrande.position
+        );
+        System.out.println(
+            "Posição final do pequeno: " + polygonPequeno.position
+        );
+
+        System.out.println(
+            "Colisões finais detectadas: " + world.collisions.size()
+        );
+
+        if (world.collisions.isEmpty()) {
+            System.out.println(
+                "Não há colisões no último passo da simulação."
+            );
+        } else {
             CollisionData collision = world.collisions.get(0);
 
             System.out.println(
-                "Penetração: " + collision.penetration
+                "Penetração final: " + collision.penetration
             );
-
             System.out.println(
-                "Normal: (" + collision.normal.x
-                + ", " + collision.normal.y + ")"
+                "Normal final: (" + collision.normal.x
+                    + ", " + collision.normal.y + ")"
             );
-
-        } else {
-            System.out.println("ERRO: a colisão não foi detectada.");
         }
-
-        // Separamos os círculos para testar novamente.
-        world.objects.get(1).position =
-            new br.edu.ufersa.simplephysics.math.Vector2(5, 0);
-
-        world.detectCollisions();
-
-        System.out.println(
-            "Colisões após separar os círculos: "
-            + world.collisions.size()
-        );
     }
+
 }

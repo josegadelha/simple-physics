@@ -168,7 +168,7 @@ public class PhysicsWorld {
         }
     }
 
-    
+
     /**
      * Cria e resolve as restrições de contato das colisões atuais,
      * reaproveitando os impulsos dos contatos do quadro anterior.
@@ -189,7 +189,7 @@ public class PhysicsWorld {
                 collision.bodyB
             );
 
-            CachedContact cached = contactCache.get(key);
+            CachedContact cached = null;
 
             double previousNormalLambda = 0;
             double previousFrictionLambda = 0;
@@ -204,7 +204,7 @@ public class PhysicsWorld {
 
                     // Só reutiliza os impulsos se a normal não tiver
                     // mudado significativamente entre os quadros.
-                    
+
                     if (cached.normal.dotProduct(currentNormal) >= 0.9) {
                         previousNormalLambda = cached.normalLambda;
                         previousFrictionLambda = cached.frictionLambda;
@@ -340,7 +340,7 @@ public class PhysicsWorld {
         return body.isStatic ? 0 : 1.0 / body.mass;
     }
 
-    
+
     /**
      * Identifica um contato pelo par de objetos.
      * A comparação usa a identidade dos objetos, não suas posições.

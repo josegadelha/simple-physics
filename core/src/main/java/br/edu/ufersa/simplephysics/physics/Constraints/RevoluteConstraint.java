@@ -271,4 +271,63 @@ public class RevoluteConstraint extends Constraint {
         this.bodyA.angularVelocity -= this.invIA * impulse;
         this.bodyB.angularVelocity += this.invIB * impulse;
     }
+
+    public void solveAngleLimits(double dt, ConstraintSettingsModel cs) {
+        // Se não houver limites angulares, não há nada para corrigir.
+        if (this.lowerAngleLimit == null && this.upperAngleLimit == null) {
+            return;
+        }
+
+        // Atualiza o ângulo relativo entre os corpos.
+        double angle = this.bodyB.rotation - this.bodyA.rotation;
+
+        // Verifica se o ângulo ultrapassou algum dos limites.
+        double error = 0.0;
+
+        if (this.lowerAngleLimit != null && angle < this.lowerAngleLimit) {
+            error = angle - this.lowerAngleLimit;
+        } else if (this.upperAngleLimit != null && angle > this.upperAngleLimit) {
+            error = angle - this.upperAngleLimit;
+        } else {
+            // O ângulo está dentro dos limites.
+            return;
+        }
+
+        // Soma das inércias inversas.
+        double invI = this.invIA + this.invIB;
+
+        // Se os dois corpos não puderem girar, não há correção possível.
+        if (invI == 0.0) {
+            return;
+        }
+
+        // Velocidade angular relativa entre os corpos.
+        double relativeAngularVelocity =
+            this.bodyB.angularVelocity - this.bodyA.angularVelocity;
+
+        // Define a correção de velocidade de acordo com o modo escolhido.
+        double bias = 0.0;
+
+        if (cs != null && "baumgarte".equals(cs.mode)) {
+            bias = cs.baumgarteFactor * error / dt;
+        } else if (cs != null && "soft".equals(cs.mode)) {
+            double maxHertz = 0.25 / dt;
+            double hz = Math.min(cs.jointSoft.hertz, maxHertz);
+
+            SoftParams soft = SoftParams.getSoftConstraintParams(
+                hz,
+                cs.jointSoft.dampingRatio,
+                dt
+            );
+
+            bias = soft.biasRate * error;
+        }
+
+        // Calcula o impulso angular corretivo.
+        double impulse = -(relativeAngularVelocity + bias) / invI;
+
+        // Aplica o impulso angular em sentidos opostos.
+        this.bodyA.angularVelocity -= this.invIA * impulse;
+        this.bodyB.angularVelocity += this.invIB * impulse;
+    }
 }

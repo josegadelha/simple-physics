@@ -1,4 +1,8 @@
 package br.edu.ufersa.simplephysics.physics;
+import br.edu.ufersa.simplephysics.physics.constraints.ContactConstraint;
+import br.edu.ufersa.simplephysics.physics.collision.CollisionData;
+import br.edu.ufersa.simplephysics.physics.collision.CollisionHelper;
+import br.edu.ufersa.simplephysics.physics.shape.PhysicsShape;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
@@ -75,8 +79,8 @@ public class PhysicsWorld {
         constraints.add(constraint);
     }
 
-    public void solveConstraints(double dt, int IterationCount) {
-        if (constraints.isEmpty() || IterationCount <= 0) {
+    public void solveConstraints(double dt, int iterationCount) {
+        if (constraints.isEmpty() || iterationCount <= 0) {
             return;
         }
 
@@ -84,12 +88,13 @@ public class PhysicsWorld {
             constraint.update(constraintSettings);
         }
 
-        for (int iteration = 0; iteration < IterationCount; iteration++) {
+        for (int iteration = 0; iteration < iterationCount; iteration++) {
             for (Constraint constraint : constraints) {
                 constraint.solve(dt, constraintSettings);
             }
         }
     }
+
 
     public void step(double dt) {
         // Apply gravity only to dynamic objects.

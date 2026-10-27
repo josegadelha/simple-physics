@@ -1,5 +1,6 @@
 package br.edu.ufersa.simplephysics.physics;
 
+
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.shape.PhysicsShape;
 
@@ -9,6 +10,7 @@ import java.util.List;
 
 public class PhysicsObject {
 
+    public double restitution = 0.0;
     public Vector2 position;
     public Vector2 velocity;
     public double rotation;
@@ -16,7 +18,7 @@ public class PhysicsObject {
     public boolean isStatic;
     public double mass;
     public double momentOfInertia;
-    public double friction = 0.3;
+    public double friction = 10;
     public final List<PhysicsShape> shapes;
 
     public PhysicsObject(

@@ -1,4 +1,4 @@
-package br.edu.ufersa.simplephysics.physics.constraints;
+package br.edu.ufersa.simplephysics.physics.Constraints;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;

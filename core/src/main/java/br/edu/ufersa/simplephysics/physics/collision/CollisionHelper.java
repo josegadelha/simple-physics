@@ -16,11 +16,7 @@ public final class CollisionHelper {
     private CollisionHelper() {
     }
 
-    /*
-     * Verifica se dois objetos possuem formas colidindo.
-     * Retorna os dados da primeira colisão encontrada.
-     * Retorna null se não houver colisão.
-     */
+
     public static CollisionData checkCollision(
         PhysicsObject bodyA,
         PhysicsObject bodyB) {
@@ -41,6 +37,7 @@ public final class CollisionHelper {
 
                 CollisionData collision = null;
 
+                // Círculo × círculo
                 if (shapeA instanceof CircleShape
                     && shapeB instanceof CircleShape) {
 
@@ -51,6 +48,7 @@ public final class CollisionHelper {
                         (CircleShape) shapeB
                     );
 
+                    // Círculo × polígono
                 } else if (shapeA instanceof CircleShape
                     && shapeB instanceof ConvexPolygonShape) {
 
@@ -61,11 +59,11 @@ public final class CollisionHelper {
                         (ConvexPolygonShape) shapeB
                     );
 
+                    // Polígono × círculo
                 } else if (shapeA instanceof ConvexPolygonShape
                     && shapeB instanceof CircleShape) {
 
-                    // Detectamos círculo contra polígono e depois
-                    // invertemos a normal para manter A -> B.
+                    // Inverte a normal para manter a direção A -> B.
                     CollisionData reversed = circleToPolygon(
                         bodyB,
                         (CircleShape) shapeB,
@@ -82,8 +80,20 @@ public final class CollisionHelper {
                             reversed.penetration
                         );
                     }
+
+                    // Polígono × polígono
+                } else if (shapeA instanceof ConvexPolygonShape
+                    && shapeB instanceof ConvexPolygonShape) {
+
+                    collision = polygonToPolygon(
+                        bodyA,
+                        (ConvexPolygonShape) shapeA,
+                        bodyB,
+                        (ConvexPolygonShape) shapeB
+                    );
                 }
 
+                // Retorna a primeira colisão encontrada.
                 if (collision != null) {
                     return collision;
                 }
@@ -92,6 +102,7 @@ public final class CollisionHelper {
 
         return null;
     }
+
 
     /*
      * Detecta colisão entre dois círculos.
@@ -368,5 +379,115 @@ public final class CollisionHelper {
 
         return true;
     }
+
+
+    private static CollisionData polygonToPolygon(
+        PhysicsObject bodyA,
+        ConvexPolygonShape polygonA,
+        PhysicsObject bodyB,
+        ConvexPolygonShape polygonB) {
+
+        // Converte os vértices dos dois polígonos para coordenadas do mundo.
+        List<Vector2> verticesA = getWorldVertices(bodyA, polygonA);
+        List<Vector2> verticesB = getWorldVertices(bodyB, polygonB);
+
+        // Guarda: menor sobreposição, componente X e componente Y do eixo.
+        double[] best = {
+            Double.POSITIVE_INFINITY,
+            0.0,
+            0.0
+        };
+
+        // Testa os eixos perpendiculares às arestas do polígono A.
+        if (!testPolygonAxes(verticesA, verticesA, verticesB, best)) {
+            return null;
+        }
+
+        // Também testa os eixos perpendiculares às arestas do polígono B.
+        if (!testPolygonAxes(verticesB, verticesA, verticesB, best)) {
+            return null;
+        }
+
+        // Se nenhum eixo válido foi encontrado, não é possível confirmar
+        // a colisão com este algoritmo.
+        if (!Double.isFinite(best[0])) {
+            return null;
+        }
+
+        // Recupera o eixo de menor sobreposição.
+        Vector2 normal = new Vector2(best[1], best[2]);
+
+        // Calcula o centro médio dos vértices de cada polígono.
+        Vector2 centerA = calculateCenter(verticesA);
+        Vector2 centerB = calculateCenter(verticesB);
+
+        // Garante que a normal aponte de A para B.
+        Vector2 direction = centerB.subtract(centerA);
+
+        if (normal.dotProduct(direction) < 0) {
+            normal = normal.scale(-1);
+        }
+
+        // Calcula um ponto de contato aproximado entre os polígonos.
+        Vector2 supportA = supportPoint(verticesA, normal, true);
+        Vector2 supportB = supportPoint(verticesB, normal, false);
+
+        Vector2 contactPoint = supportA.add(supportB).scale(0.5);
+
+        return new CollisionData(
+            bodyA,
+            bodyB,
+            contactPoint,
+            normal,
+            best[0]
+        );
+    }
+
+    private static Vector2 calculateCenter(List<Vector2> vertices) {
+        Vector2 sum = new Vector2(0, 0);
+
+        for (Vector2 vertex : vertices) {
+            sum = sum.add(vertex);
+        }
+
+        return sum.scale(1.0 / vertices.size());
+    }
+
+    private static Vector2 supportPoint(
+        List<Vector2> vertices,
+        Vector2 direction,
+        boolean maximum) {
+
+        double extreme = maximum
+            ? Double.NEGATIVE_INFINITY
+            : Double.POSITIVE_INFINITY;
+
+        // Encontra a projeção extrema.
+        for (Vector2 vertex : vertices) {
+            double projection = vertex.dotProduct(direction);
+
+            if (maximum) {
+                extreme = Math.max(extreme, projection);
+            } else {
+                extreme = Math.min(extreme, projection);
+            }
+        }
+
+        // Faz a média dos vértices que atingem esse extremo.
+        Vector2 sum = new Vector2(0, 0);
+        int count = 0;
+
+        for (Vector2 vertex : vertices) {
+            double projection = vertex.dotProduct(direction);
+
+            if (Math.abs(projection - extreme) <= EPSILON) {
+                sum = sum.add(vertex);
+                count++;
+            }
+        }
+
+        return sum.scale(1.0 / count);
+    }
+
 
 }

@@ -1,6 +1,8 @@
 package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
+import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
+import br.edu.ufersa.simplephysics.physics.constraints.ConstraintSettingsModel;
 import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
 import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
 
@@ -11,11 +13,17 @@ public class PhysicsWorld {
     public static final double MAX_OBJECT_DISTANCE = 1000.0;
 
     public List<PhysicsObject> objects;
+    public List<Constraint> constraints;
     public Vector2 gravity;
+    public int constraintIterations;
+    public ConstraintSettingsModel constraintSettings;
 
     public PhysicsWorld() {
         this.objects = new ArrayList<>();
+        this.constraints = new ArrayList<>();
         this.gravity = new Vector2(0, -9.81);
+        this.constraintIterations = 10;
+        this.constraintSettings = new ConstraintSettingsModel();
     }
 
     public void addSquare(double x, double y, double sideLength, boolean isStatic) {
@@ -60,6 +68,29 @@ public class PhysicsWorld {
         objects.add(circle);
     }
 
+    public void addConstraint(Constraint constraint) {
+        if (constraint == null) {
+            throw new IllegalArgumentException("Constraint cannot be null.");
+        }
+        constraints.add(constraint);
+    }
+
+    public void solveConstraints(double dt, int IterationCount) {
+        if (constraints.isEmpty() || IterationCount <= 0) {
+            return;
+        }
+
+        for (Constraint constraint : constraints) {
+            constraint.update(constraintSettings);
+        }
+
+        for (int iteration = 0; iteration < IterationCount; iteration++) {
+            for (Constraint constraint : constraints) {
+                constraint.solve(dt, constraintSettings);
+            }
+        }
+    }
+
     public void step(double dt) {
         // Apply gravity only to dynamic objects.
         for (PhysicsObject object : objects) {
@@ -68,7 +99,10 @@ public class PhysicsWorld {
             }
         }
 
-        // Update all objects
+        // Solve constraints using Gauss-Seidel style loop.
+        solveConstraints(dt, constraintIterations);
+
+        // Update all objects.
         for (PhysicsObject object : objects) {
             object.step(dt);
         }

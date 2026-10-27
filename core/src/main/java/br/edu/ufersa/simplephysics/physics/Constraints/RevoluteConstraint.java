@@ -1,5 +1,6 @@
 package br.edu.ufersa.simplephysics.physics.Constraints;
 
+import br.edu.ufersa.simplephysics.math.Mat2x2;
 import br.edu.ufersa.simplephysics.math.SoftParams;
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;
@@ -26,6 +27,9 @@ public class RevoluteConstraint extends Constraint {
 
     //Rigidez
     public double stiffness;
+
+    //Vetor de impulsos acumulados
+    public Vector2 accumulatedPointImpulse = new Vector2(0, 0);
 
     //Construtor da classe
     public RevoluteConstraint(PhysicsObject bodyA, PhysicsObject bodyB, Vector2 worldPoint, Double lowerAngleLimit, Double upperAngleLimit, double stiffness) {
@@ -159,7 +163,11 @@ public class RevoluteConstraint extends Constraint {
         //e o delta passado no parâmetro
         if("baumgarte".equals(cs.mode)){
             bias = C.scale(cs.baumgarteFactor / dt);
-        } else if ("soft".equals(cs.mode)) {
+        }
+        //Se for pelo Soft, a frequência máxima é limitada para evitar
+        //instabilidade, os parâmetros de amortecedor/mola são obtidos e
+        //as variáveis de correção são atualizadas
+        else if ("soft".equals(cs.mode)) {
             double maxHertz = 0.25 / dt;
             double hz = Math.min(cs.jointSoft.hertz, maxHertz);
             SoftParams soft = SoftParams.getSoftConstraintParams(hz, cs.jointSoft.dampingRatio, dt);
@@ -168,6 +176,25 @@ public class RevoluteConstraint extends Constraint {
             impulseScale = soft.impulseScale;
         }
 
+        //Usa a regra de Cramer para resolver a matriz que servirá como
+        //vetor de impulso que zera os erros de velocidade e posição
+        Vector2 impulse = Mat2x2.mat2x2Solve(this.K, Cdot.add(bias).scale(-1));
 
+        //Modifica o vetor de impulso acumulado
+        if ("soft".equals(cs.mode)) {
+            impulse.x = massScale * impulse.x - impulseScale * this.accumulatedPointImpulse.x;
+            impulse.y = massScale * impulse.y - impulseScale * this.accumulatedPointImpulse.y;
+        }
+
+        //Aplica o impulso nos corpos
+        //3° Lei de Newton: o impulso no corpo A é negativo porque é uma
+        //força oposta ao corpo B
+        this.bodyA.applyImpulse(impulse.scale(-1), this.worldA);
+        this.bodyB.applyImpulse(impulse, this.worldB);
+
+        //Se tiver Warm Starting, acumula o impulso no vetor de impulso acumulado
+        if (cs.warmStarting) {
+            this.accumulatedPointImpulse = this.accumulatedPointImpulse.add(impulse);
+        }
     }
 }

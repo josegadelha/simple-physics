@@ -16,4 +16,18 @@ public class ConvexPolygonShape implements PhysicsShape {
 
         this.vertices = new ArrayList<>(Arrays.asList(vertices));
     }
+
+    public List<Vector2> getNormals() {
+        List<Vector2> normals = new ArrayList<>();
+        for (int i = 0; i < vertices.size(); i++) {
+            Vector2 p1 = vertices.get(i);
+            Vector2 p2 = vertices.get((i + 1) % vertices.size()); // O módulo (%) conecta o último vértice ao primeiro
+
+            Vector2 edge = p2.subtract(p1);
+            // Utiliza o método que já existe no seu Vector2 para achar a perpendicular e o novo método para normalizar
+            Vector2 normal = edge.rotate90CW().normalize();
+            normals.add(normal);
+        }
+        return normals;
+    }
 }

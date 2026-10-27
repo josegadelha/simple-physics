@@ -111,43 +111,62 @@ public class PhysicsObject {
     }
 
 
+//    public void applyImpulse(Vector2 impulse, Vector2 contactPoint) {
+//        if (impulse == null) {
+//            throw new IllegalArgumentException(
+//                "Impulse cannot be null"
+//            );
+//        }
+//
+//        if (contactPoint == null) {
+//            throw new IllegalArgumentException(
+//                "Contact point cannot be null"
+//            );
+//        }
+//
+//        if (!Double.isFinite(impulse.x)
+//            || !Double.isFinite(impulse.y)) {
+//            throw new IllegalArgumentException(
+//                "Impulse components must be finite"
+//            );
+//        }
+//
+//        if (!Double.isFinite(contactPoint.x)
+//            || !Double.isFinite(contactPoint.y)) {
+//            throw new IllegalArgumentException(
+//                "Contact point coordinates must be finite"
+//            );
+//        }
+//
+//        if (isStatic) return;
+//
+//        Vector2 contactOffset = contactPoint.subtract(this.position);
+//        double angularImpulse = contactOffset.crossProduct(impulse);
+//
+//        // Update linear velocity based on the impulse and the object's mass
+//        this.velocity = this.velocity.add(impulse.scale(1.0 / this.mass));
+//
+//        // Update angular velocity based on the angular impulse and moment of inertia
+//        this.angularVelocity += angularImpulse / this.momentOfInertia;
+//    }
+
+
     public void applyImpulse(Vector2 impulse, Vector2 contactPoint) {
-        if (impulse == null) {
-            throw new IllegalArgumentException(
-                "Impulse cannot be null"
-            );
+        // Corpos estáticos não sofrem alterações de velocidade.
+        if (isStatic) {
+            return;
         }
 
-        if (contactPoint == null) {
-            throw new IllegalArgumentException(
-                "Contact point cannot be null"
-            );
-        }
+        // Atualiza a velocidade linear do objeto com base no impulso.
+        this.velocity = this.velocity.add(
+            impulse.scale(1.0 / this.mass)
+        );
 
-        if (!Double.isFinite(impulse.x)
-            || !Double.isFinite(impulse.y)) {
-            throw new IllegalArgumentException(
-                "Impulse components must be finite"
-            );
-        }
-
-        if (!Double.isFinite(contactPoint.x)
-            || !Double.isFinite(contactPoint.y)) {
-            throw new IllegalArgumentException(
-                "Contact point coordinates must be finite"
-            );
-        }
-
-        if (isStatic) return;
-
-        Vector2 contactOffset = contactPoint.subtract(this.position);
-        double angularImpulse = contactOffset.crossProduct(impulse);
-
-        // Update linear velocity based on the impulse and the object's mass
-        this.velocity = this.velocity.add(impulse.scale(1.0 / this.mass));
-
-        // Update angular velocity based on the angular impulse and moment of inertia
-        this.angularVelocity += angularImpulse / this.momentOfInertia;
+        // TESTE TEMPORÁRIO:
+        // A aplicação do impulso angular foi desativada.
+        // Isso permite verificar se o giro excessivo é causado
+        // pelo torque gerado durante as colisões.
     }
+
 
 }

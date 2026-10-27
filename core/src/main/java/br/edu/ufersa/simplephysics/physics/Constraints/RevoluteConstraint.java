@@ -8,7 +8,6 @@ import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 public class RevoluteConstraint extends Constraint {
 
     //Variáveis que vão ser usadas
-    public double beta;
     public Vector2 worldA, worldB;
     public double[][] K = {{0, 0}, {0, 0}};
 
@@ -125,7 +124,6 @@ public class RevoluteConstraint extends Constraint {
         //Mantém os pontos de ancoragem colados
         solvePointConstraint(dt, cs);
 
-        //MÉTODOS QUE AINDA NÃO EXISTEM ABAIXO!!
         //Aplica força de rotação se um motor estiver ativo
         solveMotor(dt);
 
@@ -270,5 +268,110 @@ public class RevoluteConstraint extends Constraint {
         //Newton no A)
         this.bodyA.angularVelocity -= this.invIA * impulse;
         this.bodyB.angularVelocity += this.invIB * impulse;
+    }
+
+    //Método que não permite que os ângulos ultrapassem os limites
+    public void solveAngleLimits(double dt, ConstraintSettingsModel cs){
+        //Se não tem nenhum limite definido ou o limite não foi ultrapassado, não processa nada
+        if ((this.lowerAngleLimit == null && this.upperAngleLimit == null) || this.angleViolation == 0){
+            return;
+        }
+
+        //Calcula inércia inversa (Inércia de A + B)
+        //Se a inércia inversa for menor que a tolerância (próxima de 0) o processamento
+        //é interrompido para não dividir por 0
+        double invI = this.invIA + this.invIB;
+        if (invI < 1e-6){
+            return;
+        }
+
+        //Erro de posição e erro de velocidade
+        double C = this.angleViolation;
+        double Cdot = this.bodyB.angularVelocity - this.bodyA.angularVelocity;
+
+        //Variáveis de correção
+        double bias = 0;
+        double massScale = 1.0;
+        double impulseScale = 0.0;
+
+        //Verificações com Baumgarte ou Soft, praticamente mesma lógica da verificação no solvePoinConstraint
+        if ("baumgarte".equals(cs.mode)) {
+            bias = (cs.baumgarteFactor / dt) * C;
+        } else if ("soft".equals(cs.mode)) {
+            double maxHertz = 0.25 / dt;
+            double hz = Math.min(cs.jointSoft.hertz, maxHertz);
+            SoftParams soft = SoftParams.getSoftConstraintParams(hz, cs.jointSoft.dampingRatio, dt);
+            bias = soft.biasRate * C;
+            massScale = soft.massScale;
+            impulseScale = soft.impulseScale;
+        }
+
+        //Impulso escalar necessário para corrigir posição e velocidade
+        double lambda = -(massScale * (Cdot + bias)) / invI;
+
+        //Controle direcional da posição
+        //Se o corpo passou do limite superior, o impulso só pode ser negativo ou 0,
+        //impedido de avançar mais adiante
+        //Se o corpo passou do limite inferior, o impulso só pode ser positivo ou 0,
+        //impedido de avançar negativamente
+        if (C > 0){
+            lambda = Math.min(lambda, 0);
+        } else {
+            lambda = Math.max(lambda, 0);
+        }
+
+        //Aplicação do impulso da correção nos corpos A e B
+        this.bodyA.angularVelocity -= this.invIA * lambda;
+        this.bodyB.angularVelocity += this.invIB * lambda;
+    }
+
+    //Método que configura o modo Servo da junta
+    //Define qual ângulo a junta vai, com qual força, frequência e amortecimento
+    public void setMotorTargetAngle(Double targetAngle, Double maxForce, Double freq,
+                                    Double dampingRatio, boolean targetToWrappedClosest){
+
+        //Se tem um ângulo alvo e a otimização do mais próximo está true,
+        //Delta pega o caminho mais curto até o ângulo alvo e ajusta para
+        //ser o mais curto a partir de onde está
+        if (targetAngle != null && targetToWrappedClosest) {
+            double delta = Math.atan2(Math.sin(targetAngle - this.currentAngle), Math.cos(targetAngle - this.currentAngle));
+            targetAngle = this.currentAngle + delta;
+
+            //Se a junta tem limites superior e inferior definidos e o ângulo alvo passou os limites,
+            //calcula a distância até os limites e puxa o ângulo até o limite mais próximo
+            if (this.lowerAngleLimit != null && this.upperAngleLimit != null && (targetAngle < this.lowerAngleLimit || targetAngle > this.upperAngleLimit)) {
+                double diffLower = Math.abs(angleDiffRad(this.lowerAngleLimit, targetAngle));
+                double diffUpper = Math.abs(angleDiffRad(this.upperAngleLimit, targetAngle));
+                if (diffLower < diffUpper) {
+                    targetAngle = this.lowerAngleLimit;
+                } else {
+                    targetAngle = this.upperAngleLimit;
+                }
+            }
+
+            //Cria limites mínimo e máximo de segurança
+            double minLimit = this.lowerAngleLimit != null ? this.lowerAngleLimit : Double.NEGATIVE_INFINITY;
+            double maxLimit = this.upperAngleLimit != null ? this.upperAngleLimit : Double.POSITIVE_INFINITY;
+            targetAngle = Math.min(Math.max(targetAngle, minLimit), maxLimit);
+
+        }
+
+        //Liga o motor e atualiza seus atributos se não forem null
+        this.motorEnabled = true;
+        if (targetAngle != null) this.motorTargetAngle = targetAngle;
+        if (maxForce != null) this.maxMotorForce = maxForce;
+        if (freq != null) this.motorFreq = freq;
+        if (dampingRatio != null) this.motorDampingRatio = dampingRatio;
+    }
+
+    //Normaliza a diferença entre dois ângulos para garantir que estejam sempre
+    //entre 0° e 360°
+    private double angleDiffRad(double a, double b) {
+        return ((a - b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    }
+
+    //Retorna o ângulo relativo entre os dois corpos
+    public double getRotation() {
+        return this.bodyB.rotation - this.bodyA.rotation;
     }
 }

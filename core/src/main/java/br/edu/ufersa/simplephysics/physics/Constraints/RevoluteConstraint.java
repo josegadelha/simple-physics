@@ -8,7 +8,6 @@ import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 public class RevoluteConstraint extends Constraint {
 
     //Variáveis que vão ser usadas
-    public double beta;
     public Vector2 worldA, worldB;
     public double[][] K = {{0, 0}, {0, 0}};
 
@@ -125,7 +124,6 @@ public class RevoluteConstraint extends Constraint {
         //Mantém os pontos de ancoragem colados
         solvePointConstraint(dt, cs);
 
-        //MÉTODOS QUE AINDA NÃO EXISTEM ABAIXO!!
         //Aplica força de rotação se um motor estiver ativo
         solveMotor(dt);
 
@@ -325,5 +323,28 @@ public class RevoluteConstraint extends Constraint {
         //Aplicação do impulso da correção nos corpos A e B
         this.bodyA.angularVelocity -= this.invIA * lambda;
         this.bodyB.angularVelocity += this.invIB * lambda;
+    }
+
+    //Método que configura o modo Servo da junta
+    //Define qual ângulo a junta vai, com qual força, frequência e amortecimento
+    public void setMotorTargetAngle(Double targetAngle, Double maxForce, Double freq,
+                                    Double dampingRatio, boolean targetToWrappedClosest){
+
+        //Se tem um ângulo alvo e a otimização do mais próximo está true,
+        //Delta pega o caminho mais curto até o ângulo alvo e ajusta para
+        //ser o mais curto a partir de onde está
+        if (targetAngle != null && targetToWrappedClosest) {
+            double delta = Math.atan2(Math.sin(targetAngle - this.currentAngle), Math.cos(targetAngle - this.currentAngle));
+            targetAngle = this.currentAngle + delta;
+
+            if (this.lowerAngleLimit != null && this.upperAngleLimit != null && (targetAngle < this.lowerAngleLimit || targetAngle > this.upperAngleLimit)) {
+                double diffLower = Math.abs(angleDiffRad(this.lowerAngleLimit, targetAngle));
+                double diffUpper = Math.abs(angleDiffRad(this.upperAngleLimit, targetAngle));
+            }
+        }
+    }
+
+    private double angleDiffRad(double a, double b) {
+        return ((a - b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
     }
 }

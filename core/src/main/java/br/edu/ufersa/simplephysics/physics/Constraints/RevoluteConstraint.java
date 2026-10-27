@@ -271,4 +271,59 @@ public class RevoluteConstraint extends Constraint {
         this.bodyA.angularVelocity -= this.invIA * impulse;
         this.bodyB.angularVelocity += this.invIB * impulse;
     }
+
+    //Método que não permite que os ângulos ultrapassem os limites
+    public void solveAngleLimits(double dt, ConstraintSettingsModel cs){
+        //Se não tem nenhum limite definido ou o limite não foi ultrapassado, não processa nada
+        if ((this.lowerAngleLimit == null && this.upperAngleLimit == null) || this.angleViolation == 0){
+            return;
+        }
+
+        //Calcula inércia inversa (Inércia de A + B)
+        //Se a inércia inversa for menor que a tolerância (próxima de 0) o processamento
+        //é interrompido para não dividir por 0
+        double invI = this.invIA + this.invIB;
+        if (invI < 1e-6){
+            return;
+        }
+
+        //Erro de posição e erro de velocidade
+        double C = this.angleViolation;
+        double Cdot = this.bodyB.angularVelocity - this.bodyA.angularVelocity;
+
+        //Variáveis de correção
+        double bias = 0;
+        double massScale = 1.0;
+        double impulseScale = 0.0;
+
+        //Verificações com Baumgarte ou Soft, praticamente mesma lógica da verificação no solvePoinConstraint
+        if ("baumgarte".equals(cs.mode)) {
+            bias = (cs.baumgarteFactor / dt) * C;
+        } else if ("soft".equals(cs.mode)) {
+            double maxHertz = 0.25 / dt;
+            double hz = Math.min(cs.jointSoft.hertz, maxHertz);
+            SoftParams soft = SoftParams.getSoftConstraintParams(hz, cs.jointSoft.dampingRatio, dt);
+            bias = soft.biasRate * C;
+            massScale = soft.massScale;
+            impulseScale = soft.impulseScale;
+        }
+
+        //Impulso escalar necessário para corrigir posição e velocidade
+        double lambda = -(massScale * (Cdot + bias)) / invI;
+
+        //Controle direcional da posição
+        //Se o corpo passou do limite superior, o impulso só pode ser negativo ou 0,
+        //impedido de avançar mais adiante
+        //Se o corpo passou do limite inferior, o impulso só pode ser positivo ou 0,
+        //impedido de avançar negativamente
+        if (C > 0){
+            lambda = Math.min(lambda, 0);
+        } else {
+            lambda = Math.max(lambda, 0);
+        }
+
+        //Aplicação do impulso da correção nos corpos A e B
+        this.bodyA.angularVelocity -= this.invIA * lambda;
+        this.bodyB.angularVelocity += this.invIB * lambda;
+    }
 }

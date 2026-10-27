@@ -3,6 +3,7 @@ package br.edu.ufersa.simplephysics.screen;
 import br.edu.ufersa.simplephysics.graphic.ExtendedShapeRenderer;
 import br.edu.ufersa.simplephysics.graphic.GridRenderer;
 import br.edu.ufersa.simplephysics.graphic.ImpulseArrowRenderer;
+import br.edu.ufersa.simplephysics.graphic.ConstraintRenderer;
 import br.edu.ufersa.simplephysics.graphic.PhysicsShapeRenderer;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
 import br.edu.ufersa.simplephysics.ui.ScrollablePanel;
@@ -40,6 +41,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final ExtendedShapeRenderer extendedShapeRenderer;
     private final GridRenderer gridRenderer;
     private final ImpulseArrowRenderer impulseArrowRenderer;
+    private final ConstraintRenderer constraintRenderer;
 
     private final PhysicsShapeRenderer physicsShapeRenderer;
     private final PhysicsWorld physicsWorld;
@@ -56,9 +58,12 @@ public class ExampleScreen extends ScreenAdapter {
 
     private final TextButton squareButton;
     private final TextButton circleButton;
+    private final TextButton dragObjectButton;
     private final TextButton staticButton;
     private final TextButton gravityButton;
+    private final TextButton velocityReductionButton;
     private final TextButton impulseButton;
+    private final TextButton revoluteConstraintButton;
     private final TextButton impulseScalingButton;
     private final TextButton followObjectButton;
     private final TextButton resetCameraButton;
@@ -73,6 +78,7 @@ public class ExampleScreen extends ScreenAdapter {
         extendedShapeRenderer = new ExtendedShapeRenderer();
         gridRenderer = new GridRenderer(1f);
         impulseArrowRenderer = new ImpulseArrowRenderer();
+        constraintRenderer = new ConstraintRenderer();
         physicsShapeRenderer = new PhysicsShapeRenderer();
 
         physicsWorld = new PhysicsWorld();
@@ -110,9 +116,12 @@ public class ExampleScreen extends ScreenAdapter {
 
         squareButton = SimulationButtons.createSquareButton(skin, simulationInputController);
         circleButton = SimulationButtons.createCircleButton(skin, simulationInputController);
+        dragObjectButton = SimulationButtons.createDragObjectButton(skin, simulationInputController);
         staticButton = SimulationButtons.createStaticButton(skin, simulationInputController);
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
+        velocityReductionButton = SimulationButtons.createVelocityReductionButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
+        revoluteConstraintButton = SimulationButtons.createRevoluteConstraintButton(skin, simulationInputController);
         impulseScalingButton = SimulationButtons.createImpulseScalingButton(skin, simulationInputController);
         followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
         resetCameraButton = SimulationButtons.createResetCameraButton(skin, simulationInputController);
@@ -124,9 +133,11 @@ public class ExampleScreen extends ScreenAdapter {
         );
         SimulationButtons.configureSimulationToolGroup(
             followObjectButton,
+            dragObjectButton,
             squareButton,
             circleButton,
-            impulseButton
+            impulseButton,
+            revoluteConstraintButton
         );
 
         shapeOptionsTable = new Table(skin);
@@ -147,9 +158,15 @@ public class ExampleScreen extends ScreenAdapter {
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(gravityButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(velocityReductionButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseScalingButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(dragObjectButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(revoluteConstraintButton).width(300).height(50);
 
         cameraOptionsTable = new Table(skin);
         Label cameraTitle = new Label("Camera Settings", skin);
@@ -161,7 +178,7 @@ public class ExampleScreen extends ScreenAdapter {
 
         panelTable.add(shapeOptionsTable).width(300).height(310);
         panelTable.row().padTop(12);
-        panelTable.add(physicsOptionsTable).width(300).height(200);
+        panelTable.add(physicsOptionsTable).width(300).height(394);
         panelTable.row().padTop(12);
         panelTable.add(cameraOptionsTable).width(300).height(172);
 
@@ -185,7 +202,13 @@ public class ExampleScreen extends ScreenAdapter {
         simulationInputController.updateCameraFollow();
         SimulationButtons.updateDisabledButtons(
             new TextButton[] { followObjectButton },
-            new TextButton[] { squareButton, circleButton, impulseButton },
+            new TextButton[] {
+                squareButton,
+                circleButton,
+                dragObjectButton,
+                impulseButton,
+                revoluteConstraintButton
+            },
             simulationInputController.isWaitingForFollowTarget()
         );
         SimulationButtons.updateFollowObjectButtonLabel(
@@ -223,6 +246,12 @@ public class ExampleScreen extends ScreenAdapter {
 
         gridRenderer.render(simulationCamera, simulationWidth, simulationHeight);
         physicsShapeRenderer.render(simulationCamera, physicsWorld);
+        constraintRenderer.render(
+            simulationCamera,
+            physicsWorld,
+            simulationInputController.getRevoluteDragStart(),
+            simulationInputController.getRevoluteDragEnd()
+        );
         impulseArrowRenderer.render(
             simulationCamera,
             simulationInputController.getImpulseStart(),
@@ -260,6 +289,7 @@ public class ExampleScreen extends ScreenAdapter {
         extendedShapeRenderer.dispose();
         gridRenderer.dispose();
         impulseArrowRenderer.dispose();
+        constraintRenderer.dispose();
         physicsShapeRenderer.dispose();
         panelStage.dispose();
         skin.dispose();

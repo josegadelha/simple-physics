@@ -337,13 +337,35 @@ public class RevoluteConstraint extends Constraint {
             double delta = Math.atan2(Math.sin(targetAngle - this.currentAngle), Math.cos(targetAngle - this.currentAngle));
             targetAngle = this.currentAngle + delta;
 
+            //Se a junta tem limites superior e inferior definidos e o ângulo alvo passou os limites,
+            //calcula a distância até os limites e puxa o ângulo até o limite mais próximo
             if (this.lowerAngleLimit != null && this.upperAngleLimit != null && (targetAngle < this.lowerAngleLimit || targetAngle > this.upperAngleLimit)) {
                 double diffLower = Math.abs(angleDiffRad(this.lowerAngleLimit, targetAngle));
                 double diffUpper = Math.abs(angleDiffRad(this.upperAngleLimit, targetAngle));
+                if (diffLower < diffUpper) {
+                    targetAngle = this.lowerAngleLimit;
+                } else {
+                    targetAngle = this.upperAngleLimit;
+                }
             }
+
+            //Cria limites mínimo e máximo de segurança
+            double minLimit = this.lowerAngleLimit != null ? this.lowerAngleLimit : Double.NEGATIVE_INFINITY;
+            double maxLimit = this.upperAngleLimit != null ? this.upperAngleLimit : Double.POSITIVE_INFINITY;
+            targetAngle = Math.min(Math.max(targetAngle, minLimit), maxLimit);
+
         }
+
+        //Liga o motor e atualiza seus atributos se não forem null
+        this.motorEnabled = true;
+        if (targetAngle != null) this.motorTargetAngle = targetAngle;
+        if (maxForce != null) this.maxMotorForce = maxForce;
+        if (freq != null) this.motorFreq = freq;
+        if (dampingRatio != null) this.motorDampingRatio = dampingRatio;
     }
 
+    //Normaliza a diferença entre dois ângulos para garantir que estejam sempre
+    //entre 0° e 360°
     private double angleDiffRad(double a, double b) {
         return ((a - b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
     }

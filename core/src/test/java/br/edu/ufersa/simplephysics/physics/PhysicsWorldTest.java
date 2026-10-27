@@ -2,6 +2,7 @@ package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
+import br.edu.ufersa.simplephysics.physics.constraints.RevoluteConstraint;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -134,6 +135,23 @@ class PhysicsWorldTest {
     }
 
     @Test
+    void reducesLinearAndAngularVelocityWithoutGravityWhenEnabled() {
+        PhysicsWorld world = new PhysicsWorld();
+        world.reduceVelocityEnabled = true;
+        PhysicsObject object = new PhysicsObject(0, 0, false, 1, 1);
+        object.velocity = new Vector2(4, 0);
+        object.angularVelocity = 2;
+        world.objects.add(object);
+
+        world.step(0.5);
+
+        double dampingFactor = Math.exp(-1);
+        assertVectorEquals(new Vector2(4 * dampingFactor, 0), object.velocity);
+        assertEquals(2 * dampingFactor, object.angularVelocity, DELTA);
+        assertVectorEquals(new Vector2(2 * dampingFactor, 0), object.position);
+    }
+
+    @Test
     void iteratesConstraintsUsingGaussSeidelStyleLoop() {
         PhysicsWorld world = new PhysicsWorld();
         world.constraintIterations = 5;
@@ -144,6 +162,21 @@ class PhysicsWorldTest {
 
         assertEquals(1, constraint.updateCalls);
         assertEquals(5, constraint.solveCalls);
+    }
+
+    @Test
+    void createsRevoluteConstraintAtSeparateWorldAnchors() {
+        PhysicsObject first = new PhysicsObject(0, 0, false, 1, 1);
+        PhysicsObject second = new PhysicsObject(2, 0, false, 1, 1);
+        RevoluteConstraint constraint = new RevoluteConstraint(
+            first,
+            second,
+            new Vector2(1, 0),
+            new Vector2(2, 1)
+        );
+
+        assertVectorEquals(new Vector2(1, 0), first.localToWorld(constraint.localA));
+        assertVectorEquals(new Vector2(2, 1), second.localToWorld(constraint.localB));
     }
 
     private static void assertVectorEquals(Vector2 expected, Vector2 actual) {

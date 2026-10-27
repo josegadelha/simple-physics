@@ -3,6 +3,8 @@ package br.edu.ufersa.simplephysics.screen;
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
+import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
+import br.edu.ufersa.simplephysics.physics.constraints.RevoluteConstraint;
 import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
 import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
 import br.edu.ufersa.simplephysics.physics.shape.PhysicsShape;
@@ -24,9 +26,11 @@ public class SimulationInputController {
 
     public enum Tool {
         NONE,
+        DRAG_OBJECT,
         CREATE_SQUARE,
         CREATE_CIRCLE,
-        APPLY_IMPULSE
+        APPLY_IMPULSE,
+        CREATE_REVOLUTE_CONSTRAINT
     }
 
     public enum ImpulseScaling {
@@ -45,6 +49,12 @@ public class SimulationInputController {
     private double circleRadius = DEFAULT_CIRCLE_RADIUS;
     private double squareSideLength = DEFAULT_SQUARE_SIDE_LENGTH;
     private boolean applyingImpulse;
+    private PhysicsObject draggedPhysicsObject;
+    private PhysicsObject mouseAnchorObject;
+    private RevoluteConstraint mouseDragConstraint;
+    private PhysicsObject revoluteFirstObject;
+    private Vector2 revoluteDragStart;
+    private Vector2 revoluteDragEnd;
     private boolean cameraFollowEnabled;
     private PhysicsObject followedObject;
     private Vector2 impulseStart;
@@ -123,6 +133,14 @@ public class SimulationInputController {
         return impulseEnd;
     }
 
+    public Vector2 getRevoluteDragStart() {
+        return revoluteDragStart;
+    }
+
+    public Vector2 getRevoluteDragEnd() {
+        return revoluteDragEnd;
+    }
+
     public void setCameraFollowEnabled(boolean enabled) {
         cameraFollowEnabled = enabled;
         if (!enabled) {
@@ -166,7 +184,6 @@ public class SimulationInputController {
             private boolean isPanning;
             private int previousScreenX;
             private int previousScreenY;
-            private PhysicsObject draggedPhysicsObject;
 
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
@@ -191,6 +208,16 @@ public class SimulationInputController {
                     return true;
                 }
 
+                if (selectedTool == Tool.CREATE_REVOLUTE_CONSTRAINT) {
+                    revoluteFirstObject = findObjectAt(worldPosition);
+                    if (revoluteFirstObject == null) {
+                        return false;
+                    }
+                    revoluteDragStart = worldPosition;
+                    revoluteDragEnd = worldPosition;
+                    return true;
+                }
+
                 if (selectedTool == Tool.APPLY_IMPULSE) {
                     // Start an impulse drag only on an object.
                     draggedPhysicsObject = findObjectAt(worldPosition);
@@ -201,6 +228,36 @@ public class SimulationInputController {
                     impulseStart = worldPosition;
                     impulseEnd = worldPosition;
                     applyingImpulse = true;
+                    return true;
+                }
+
+                if (selectedTool == Tool.DRAG_OBJECT) {
+                    draggedPhysicsObject = findObjectAt(worldPosition);
+                    if (draggedPhysicsObject == null) {
+                        draggedPhysicsObject = null;
+                        return false;
+                    }
+
+                    if (draggedPhysicsObject.isStatic) {
+                        draggedPhysicsObject = null;
+                        return true;
+                    }
+
+                    mouseAnchorObject = new PhysicsObject(
+                        worldPosition.x,
+                        worldPosition.y,
+                        true,
+                        1,
+                        1
+                    );
+                    world.objects.add(mouseAnchorObject);
+                    mouseDragConstraint = new RevoluteConstraint(
+                        draggedPhysicsObject,
+                        mouseAnchorObject,
+                        worldPosition,
+                        worldPosition
+                    );
+                    world.constraints.add(mouseDragConstraint);
                     return true;
                 }
 
@@ -227,8 +284,18 @@ public class SimulationInputController {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
+                if (mouseAnchorObject != null) {
+                    mouseAnchorObject.position = getMouseWorldPosition(screenX, screenY);
+                    return true;
+                }
+
                 if (draggedPhysicsObject != null) {
                     impulseEnd = getMouseWorldPosition(screenX, screenY);
+                    return true;
+                }
+
+                if (revoluteFirstObject != null) {
+                    revoluteDragEnd = getMouseWorldPosition(screenX, screenY);
                     return true;
                 }
 
@@ -250,15 +317,42 @@ public class SimulationInputController {
 
             @Override
             public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+                if (button == Input.Buttons.LEFT && mouseAnchorObject != null) {
+                    world.constraints.remove(mouseDragConstraint);
+                    world.objects.remove(mouseAnchorObject);
+                    draggedPhysicsObject = null;
+                    mouseAnchorObject = null;
+                    mouseDragConstraint = null;
+                    return true;
+                }
+
+                if (button == Input.Buttons.LEFT && revoluteFirstObject != null) {
+                    revoluteDragEnd = getMouseWorldPosition(screenX, screenY);
+                    PhysicsObject secondObject = findObjectAt(revoluteDragEnd);
+                    if (secondObject != null && secondObject != revoluteFirstObject) {
+                        Constraint constraint = new RevoluteConstraint(
+                            revoluteFirstObject,
+                            secondObject,
+                            revoluteDragStart,
+                            revoluteDragEnd
+                        );
+                        world.constraints.add(constraint);
+                    }
+                    revoluteFirstObject = null;
+                    revoluteDragStart = null;
+                    revoluteDragEnd = null;
+                    return true;
+                }
+
                 if (button == Input.Buttons.LEFT && draggedPhysicsObject != null) {
-                    Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
-                    Vector2 impulse = getImpulseForDrag(drag);
-                    if (impulse.length() > 0) {
-                        // Apply the impulse where the drag began.
-                        draggedPhysicsObject.applyImpulse(impulse, impulseStart);
+                    if (applyingImpulse && impulseStart != null) {
+                        Vector2 drag = getMouseWorldPosition(screenX, screenY).subtract(impulseStart);
+                        Vector2 impulse = getImpulseForDrag(drag);
+                        if (impulse.length() > 0) {
+                            draggedPhysicsObject.applyImpulse(impulse, impulseStart);
+                        }
                     }
 
-                    // Reset the impulse drag state.
                     draggedPhysicsObject = null;
                     impulseStart = null;
                     impulseEnd = null;

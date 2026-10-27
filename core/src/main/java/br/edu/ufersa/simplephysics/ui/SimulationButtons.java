@@ -50,6 +50,18 @@ public final class SimulationButtons {
         );
     }
 
+    public static TextButton createDragObjectButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        return createToolButton(
+            "Drag objects",
+            SimulationInputController.Tool.DRAG_OBJECT,
+            skin,
+            inputController
+        );
+    }
+
     // Shows a prompt until a shape is selected, then displays that shape's size control.
     public static Table createShapeSizeControl(
         Skin skin,
@@ -258,6 +270,17 @@ public final class SimulationButtons {
         return button;
     }
 
+    public static TextButton createVelocityReductionButton(Skin skin, PhysicsWorld world) {
+        TextButton button = createToggleButton("Reduce velocity", skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                world.reduceVelocityEnabled = button.isChecked();
+            }
+        });
+        return button;
+    }
+
     // Controls whether newly created physics objects are static.
     public static TextButton createStaticButton(
         Skin skin,
@@ -281,6 +304,18 @@ public final class SimulationButtons {
         return createToolButton(
             "Apply impulse",
             SimulationInputController.Tool.APPLY_IMPULSE,
+            skin,
+            inputController
+        );
+    }
+
+    public static TextButton createRevoluteConstraintButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        return createToolButton(
+            "Create revolute joint",
+            SimulationInputController.Tool.CREATE_REVOLUTE_CONSTRAINT,
             skin,
             inputController
         );

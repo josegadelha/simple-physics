@@ -44,6 +44,19 @@ public class RevoluteConstraint extends Constraint {
     public double maxMotorForce = 5;
 
     //Construtor da classe
+    public RevoluteConstraint(
+        PhysicsObject bodyA,
+        PhysicsObject bodyB,
+        Vector2 worldAnchorA,
+        Vector2 worldAnchorB
+    ) {
+        this(bodyA, bodyB, worldAnchorA, null, null, 1.0);
+        if (worldAnchorB == null) {
+            throw new IllegalArgumentException("The second revolute anchor cannot be null.");
+        }
+        this.localB = bodyB.worldToLocal(worldAnchorB);
+    }
+
     public RevoluteConstraint(PhysicsObject bodyA, PhysicsObject bodyB, Vector2 worldPoint, Double lowerAngleLimit, Double upperAngleLimit, double stiffness) {
         super(bodyA, bodyB);
         //WorldA, WorldB, WorldPoint = Pontos das juntas entre os corpos A e B

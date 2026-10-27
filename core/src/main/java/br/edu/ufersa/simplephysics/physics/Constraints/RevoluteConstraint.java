@@ -31,6 +31,19 @@ public class RevoluteConstraint extends Constraint {
     //Vetor de impulsos acumulados
     public Vector2 accumulatedPointImpulse = new Vector2(0, 0);
 
+    //Váriaveis do motor
+    //Motor ativo ou não
+    public boolean motorEnabled = false;
+    public Double motorTargetAngle = null;
+    //Frequência do motor
+    public double motorFreq = 6.0;
+    //Taxa de amortecimento
+    public double motorDampingRatio = 1.0;
+    //Velocidade do motor
+    public double motorSpeed = 0;
+    //Força máxima do motor
+    public double maxMotorForce = 5;
+
     //Construtor da classe
     public RevoluteConstraint(PhysicsObject bodyA, PhysicsObject bodyB, Vector2 worldPoint, Double lowerAngleLimit, Double upperAngleLimit, double stiffness) {
         super(bodyA, bodyB);
@@ -196,5 +209,66 @@ public class RevoluteConstraint extends Constraint {
         if (cs.warmStarting) {
             this.accumulatedPointImpulse = this.accumulatedPointImpulse.add(impulse);
         }
+    }
+
+    //Método que simula um motor de velocidade e/ou uma mola
+    public void solveMotor(double dt){
+        //Se não tiver motor ou estiver desligado, não processa nada
+        if(!this.motorEnabled){
+            return;
+        }
+
+        //Resistência combinada: inércia invertida do corpo A + B
+        double invI = this.invIA + this.invIB;
+
+        //Se a inércia dos dois corpos forem 0, não processa
+        //Um motor não pode girar corpos com inércia infinita
+        if(invI == 0){
+            return;
+        }
+
+        //Impulso rotacional que vai ser aplicado
+        double impulse = 0;
+        //Velocidade angular relativa entre os dois corpos
+        double relVel = this.bodyB.angularVelocity - this.bodyA.angularVelocity;
+
+        //Se o motorTargetAngle não for null, entra no modo Servo (comportamento
+        //de mola). Se for nulo, entra no modo Velocidade Constante.
+        //Modo servo
+        if (this.motorTargetAngle != null) {
+            //Inércia efetiva
+            double Ieff = 1.0 / invI;
+
+            //Converte frequência do motor de Hz para radiano/s
+            double omega = 2 * Math.PI * this.motorFreq;
+
+            //Força elástica da mola
+            double k = Ieff * omega * omega;
+
+            //Coeficiente de amortecimento
+            double c = 2 * Ieff * this.motorDampingRatio * omega;
+
+            //Parâmetros de integração implícita
+            double gamma = 1.0 / (dt * (c + k * dt));
+            double motorBias = (this.currentAngle - this.motorTargetAngle) * k * dt * gamma;
+
+            //Calcula impulso final
+            impulse = -(relVel + motorBias) / (invI + gamma);
+
+        }
+        //Modo Velocidade constante
+        else {
+            impulse = (this.motorSpeed - relVel) / invI;
+        }
+
+        //limita o impulso máximo
+        double maxImp = this.maxMotorForce * dt;
+        if (impulse > maxImp) impulse = maxImp;
+        if (impulse < -maxImp) impulse = -maxImp;
+
+        //Aplicação do impulso em cada corpo (Novamente 3° lei de
+        //Newton no A)
+        this.bodyA.angularVelocity -= this.invIA * impulse;
+        this.bodyB.angularVelocity += this.invIB * impulse;
     }
 }

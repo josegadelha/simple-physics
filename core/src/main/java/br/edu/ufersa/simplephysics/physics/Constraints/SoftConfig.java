@@ -1,4 +1,4 @@
-package br.edu.ufersa.simplephysics.physics.Constraints;
+package br.edu.ufersa.simplephysics.physics.constraints;
 
 public class SoftConfig {
         public double hertz;

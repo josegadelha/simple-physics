@@ -1,4 +1,4 @@
-package br.edu.ufersa.simplephysics.physics.Constraints;
+package br.edu.ufersa.simplephysics.physics.constraints;
 
 import br.edu.ufersa.simplephysics.math.Mat2x2;
 import br.edu.ufersa.simplephysics.math.SoftParams;

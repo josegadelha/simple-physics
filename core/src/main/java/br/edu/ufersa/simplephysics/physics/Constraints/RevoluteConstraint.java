@@ -369,4 +369,9 @@ public class RevoluteConstraint extends Constraint {
     private double angleDiffRad(double a, double b) {
         return ((a - b + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
     }
+
+    //Retorna o ângulo relativo entre os dois corpos
+    public double getRotation() {
+        return this.bodyB.rotation - this.bodyA.rotation;
+    }
 }

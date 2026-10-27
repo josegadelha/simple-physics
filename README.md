@@ -2,6 +2,8 @@
 
 A small Java/libGDX desktop physics demo for creating and interacting with simple physics objects.
 
+The simulation supports physics constraints.
+
 ## Object settings
 
 - Select **Create square** or **Create circle**, then click in the simulation area to place an object.
@@ -11,7 +13,7 @@ A small Java/libGDX desktop physics demo for creating and interacting with simpl
 ## Physics settings
 
 - Toggle **Gravity** to turn gravity on or off.
-- Select **Apply impulse**, then drag from a dynamic object to apply an impulse. The arrow previews the impulse direction and magnitude.
+- Select **Apply impulse**, then drag from a dynamic object to apply an impulse. Use **Impulse scaling** to switch between linear and exponential scaling.
 
 ## Camera settings
 

@@ -1,6 +1,7 @@
 package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
+import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -132,8 +133,40 @@ class PhysicsWorldTest {
         assertVectorEquals(new Vector2(0.25, 0), object.position);
     }
 
+    @Test
+    void iteratesConstraintsUsingGaussSeidelStyleLoop() {
+        PhysicsWorld world = new PhysicsWorld();
+        world.constraintIterations = 5;
+        TrackingConstraint constraint = new TrackingConstraint();
+        world.addConstraint(constraint);
+
+        world.step(0.1);
+
+        assertEquals(1, constraint.updateCalls);
+        assertEquals(5, constraint.solveCalls);
+    }
+
     private static void assertVectorEquals(Vector2 expected, Vector2 actual) {
         assertEquals(expected.x, actual.x, DELTA, "X component mismatch");
         assertEquals(expected.y, actual.y, DELTA, "Y component mismatch");
+    }
+
+    private static class TrackingConstraint extends Constraint {
+        private int updateCalls = 0;
+        private int solveCalls = 0;
+
+        private TrackingConstraint() {
+            super(null, null);
+        }
+
+        @Override
+        public void update(Object settings) {
+            updateCalls++;
+        }
+
+        @Override
+        public void solve(double dt, Object settings) {
+            solveCalls++;
+        }
     }
 }

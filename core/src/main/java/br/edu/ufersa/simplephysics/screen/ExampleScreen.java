@@ -62,6 +62,7 @@ public class ExampleScreen extends ScreenAdapter {
     private final TextButton gravityButton;
     private final TextButton impulseButton;
     private final TextButton followObjectButton;
+    private final TextButton collisionButton;
 
     public ExampleScreen() {
         panelCamera = new OrthographicCamera();
@@ -103,6 +104,7 @@ public class ExampleScreen extends ScreenAdapter {
         staticButton = SimulationButtons.createStaticButton(skin, simulationInputController);
         gravityButton = SimulationButtons.createGravityButton(skin, physicsWorld);
         impulseButton = SimulationButtons.createImpulseButton(skin, simulationInputController);
+        collisionButton = SimulationButtons.createCollisionButton(skin, physicsWorld);
         followObjectButton = SimulationButtons.createFollowObjectButton(skin, simulationInputController);
         Table shapeSizeControl = SimulationButtons.createShapeSizeControl(
             skin,
@@ -134,6 +136,8 @@ public class ExampleScreen extends ScreenAdapter {
         physicsOptionsTable.add(physicsTitle).center();
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(gravityButton).width(300).height(50);
+        physicsOptionsTable.row().padTop(12);
+        physicsOptionsTable.add(collisionButton).width(300).height(50);
         physicsOptionsTable.row().padTop(12);
         physicsOptionsTable.add(impulseButton).width(300).height(50);
 

@@ -211,6 +211,19 @@ public final class SimulationButtons {
         return button;
     }
 
+    // Creates a toggle button that enables or disables collisions in the physics world.
+    public static TextButton createCollisionButton(Skin skin, PhysicsWorld world) {
+        TextButton button = createToggleButton("Collisions", skin);
+        button.setChecked(world.collisionsEnabled);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                world.collisionsEnabled = button.isChecked();
+            }
+        });
+        return button;
+    }
+
     // Controls whether newly created physics objects are static.
     public static TextButton createStaticButton(
         Skin skin,

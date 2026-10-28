@@ -2,6 +2,7 @@ package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
 import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
+import br.edu.ufersa.simplephysics.physics.constraints.ContactConstraint;
 import br.edu.ufersa.simplephysics.physics.constraints.RevoluteConstraint;
 import org.junit.jupiter.api.Test;
 
@@ -162,6 +163,21 @@ class PhysicsWorldTest {
 
         assertEquals(1, constraint.updateCalls);
         assertEquals(5, constraint.solveCalls);
+    }
+
+    @Test
+    void addsContactConstraintForOverlappingCirclesWhenCollisionsAreEnabled() {
+        PhysicsWorld world = new PhysicsWorld();
+        world.gravity = new Vector2(0, 0);
+        world.collisionsEnabled = true;
+        world.addCircle(0, 0, 1, true);
+        world.addCircle(1.5, 0, 1, false);
+
+        world.step(0.01);
+
+        assertTrue(world.constraints.stream().anyMatch(
+            constraint -> constraint instanceof ContactConstraint
+        ));
     }
 
     @Test

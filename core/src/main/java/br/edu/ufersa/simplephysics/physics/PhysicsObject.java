@@ -16,6 +16,7 @@ public class PhysicsObject {
     public double mass;
     public double momentOfInertia;
     public double friction = 0.3;
+    public double restitution = 0.05;
     public final List<PhysicsShape> shapes;
 
     public PhysicsObject(

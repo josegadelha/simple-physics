@@ -24,7 +24,7 @@ public class ConvexPolygonShape implements PhysicsShape {
             Vector2 p2 = vertices.get((i + 1) % vertices.size()); // O módulo (%) conecta o último vértice ao primeiro
 
             Vector2 edge = p2.subtract(p1);
-            // Utiliza o método que já existe no seu Vector2 para achar a perpendicular e o novo método para normalizar
+            // Use the method that already exists in your Vector2 to find the perpendicular, and the new method to normalize it.
             Vector2 normal = edge.rotate90CW().normalize();
             normals.add(normal);
         }

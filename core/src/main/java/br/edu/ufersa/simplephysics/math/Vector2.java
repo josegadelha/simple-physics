@@ -47,7 +47,7 @@ public class Vector2 {
     public Vector2 normalize() {
         double len = length();
         if (len == 0) {
-            return new Vector2(0, 0); // Previne divisão por zero
+            return new Vector2(0, 0); // Prevents division by zero
         }
         return new Vector2(this.x / len, this.y / len);
     }

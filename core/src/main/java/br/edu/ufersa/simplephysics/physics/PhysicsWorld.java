@@ -136,7 +136,7 @@ public class PhysicsWorld {
         // Remove objects that are too far away.
         objects.removeIf(object -> Math.hypot(object.position.x, object.position.y) > MAX_OBJECT_DISTANCE);
 
-        // Detecta colisões se o botão estiver ativado
+        // Detects collisions if the button is enabled
         if (this.collisionsEnabled) {
             for (int i = 0; i < objects.size(); i++) {
                 for (int j = i + 1; j < objects.size(); j++) {
@@ -159,7 +159,7 @@ public class PhysicsWorld {
                     }
 
                     if (info != null) {
-                        System.out.printf("Colisão detetada! Penetração: %.4f\n", info.penetration);
+                        System.out.printf("Colide! Penetra: %.4f\n", info.penetration);
 
                         // Perform clipping only if both are polygons
                         if (shapeA instanceof ConvexPolygonShape && shapeB instanceof ConvexPolygonShape) {

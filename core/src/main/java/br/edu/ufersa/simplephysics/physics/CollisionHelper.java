@@ -1,12 +1,79 @@
 package br.edu.ufersa.simplephysics.physics;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
+import br.edu.ufersa.simplephysics.physics.constraints.ContactConstraint;
 import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
 import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CollisionHelper {
+
+    public static List<ContactConstraint> handleCollisions(List<PhysicsObject> objects) {
+        List<ContactConstraint> contacts = new ArrayList<>();
+        for (int i = 0; i < objects.size(); i++) {
+            PhysicsObject bodyA = objects.get(i);
+            if (bodyA.shapes.isEmpty()) continue;
+            for (int j = i + 1; j < objects.size(); j++) {
+                PhysicsObject bodyB = objects.get(j);
+                if (bodyA.isStatic && bodyB.isStatic || bodyB.shapes.isEmpty()) continue;
+
+                ConvexPolygonShape polyA = bodyA.shapes.get(0) instanceof ConvexPolygonShape
+                    ? (ConvexPolygonShape) bodyA.shapes.get(0) : null;
+                CircleShape circleA = bodyA.shapes.get(0) instanceof CircleShape
+                    ? (CircleShape) bodyA.shapes.get(0) : null;
+                ConvexPolygonShape polyB = bodyB.shapes.get(0) instanceof ConvexPolygonShape
+                    ? (ConvexPolygonShape) bodyB.shapes.get(0) : null;
+                CircleShape circleB = bodyB.shapes.get(0) instanceof CircleShape
+                    ? (CircleShape) bodyB.shapes.get(0) : null;
+
+                CollisionInfo collision = polyA != null && polyB != null
+                    ? polyToPolySAT(bodyA, polyA, bodyB, polyB)
+                    : circleA != null && circleB != null
+                        ? circleToCircle(bodyA, circleA, bodyB, circleB)
+                        : circleA != null && polyB != null
+                            ? circleToPolySAT(bodyA, circleA, bodyB, polyB)
+                            : polyA != null && circleB != null
+                                ? reverse(circleToPolySAT(bodyB, circleB, bodyA, polyA))
+                                : null;
+                if (collision == null || collision.normal == null) continue;
+
+                Vector2 normal = collision.normal;
+                if (normal.dotProduct(bodyB.position.subtract(bodyA.position)) < 0) {
+                    normal = normal.scale(-1);
+                }
+
+                List<Vector2> points;
+                if (polyA != null && polyB != null) {
+                    points = collision.referenceIsA
+                        ? cortarPoligonoComPoligono(bodyA, polyA, bodyB, polyB, collision)
+                        : cortarPoligonoComPoligono(bodyB, polyB, bodyA, polyA, collision);
+                } else if (circleA != null) {
+                    points = List.of(bodyA.localToWorld(circleA.offset).add(
+                        normal.scale(circleA.radius)
+                    ));
+                } else {
+                    points = List.of(bodyB.localToWorld(circleB.offset).subtract(
+                        normal.scale(circleB.radius)
+                    ));
+                }
+
+                for (Vector2 point : points) {
+                    contacts.add(new ContactConstraint(
+                        bodyA, bodyB, point, normal, collision.penetration, null
+                    ));
+                }
+            }
+        }
+        return contacts;
+    }
+
+    private static CollisionInfo reverse(CollisionInfo collision) {
+        return collision == null ? null : new CollisionInfo(
+            collision.normal.scale(-1), collision.penetration,
+            !collision.referenceIsA, collision.referenceEdgeIndex
+        );
+    }
 
     // Extrai as normais perpendiculares a partir de vértices globais
     private static List<Vector2> getNormals(List<Vector2> vertices) {

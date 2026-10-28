@@ -5,6 +5,7 @@ import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
 import br.edu.ufersa.simplephysics.physics.constraints.ConstraintSettingsModel;
 import br.edu.ufersa.simplephysics.physics.shape.CircleShape;
 import br.edu.ufersa.simplephysics.physics.shape.ConvexPolygonShape;
+import br.edu.ufersa.simplephysics.physics.shape.PhysicsShape;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +21,13 @@ public class PhysicsWorld {
     public int constraintIterations;
     public ConstraintSettingsModel constraintSettings;
     public boolean reduceVelocityEnabled;
+    public boolean collisionsEnabled;
 
     public PhysicsWorld() {
         this.objects = new ArrayList<>();
         this.constraints = new ArrayList<>();
         this.gravity = new Vector2(0, -9.81);
+        this.collisionsEnabled = false;
         this.constraintIterations = 10;
         this.constraintSettings = new ConstraintSettingsModel();
     }
@@ -132,5 +135,49 @@ public class PhysicsWorld {
 
         // Remove objects that are too far away.
         objects.removeIf(object -> Math.hypot(object.position.x, object.position.y) > MAX_OBJECT_DISTANCE);
+
+        // Detects collisions if the button is enabled
+        if (this.collisionsEnabled) {
+            for (int i = 0; i < objects.size(); i++) {
+                for (int j = i + 1; j < objects.size(); j++) {
+                    PhysicsObject objA = objects.get(i);
+                    PhysicsObject objB = objects.get(j);
+
+                    PhysicsShape shapeA = objA.shapes.get(0);
+                    PhysicsShape shapeB = objB.shapes.get(0);
+                    CollisionInfo info = null;
+
+                    // Sort by geometric shape type
+                    if (shapeA instanceof ConvexPolygonShape && shapeB instanceof ConvexPolygonShape) {
+                        info = CollisionHelper.polyToPolySAT(objA, (ConvexPolygonShape) shapeA, objB, (ConvexPolygonShape) shapeB);
+                    } else if (shapeA instanceof CircleShape && shapeB instanceof CircleShape) {
+                        info = CollisionHelper.circleToCircle(objA, (CircleShape) shapeA, objB, (CircleShape) shapeB);
+                    } else if (shapeA instanceof CircleShape && shapeB instanceof ConvexPolygonShape) {
+                        info = CollisionHelper.circleToPolySAT(objA, (CircleShape) shapeA, objB, (ConvexPolygonShape) shapeB);
+                    } else if (shapeA instanceof ConvexPolygonShape && shapeB instanceof CircleShape) {
+                        info = CollisionHelper.circleToPolySAT(objB, (CircleShape) shapeB, objA, (ConvexPolygonShape) shapeA);
+                    }
+
+                    if (info != null) {
+                        System.out.printf("Colide! Penetra: %.4f\n", info.penetration);
+
+                        // Perform clipping only if both are polygons
+                        if (shapeA instanceof ConvexPolygonShape && shapeB instanceof ConvexPolygonShape) {
+                            List<Vector2> pontosDeContacto;
+
+                            if (info.referenceIsA) {
+                                pontosDeContacto = CollisionHelper.cortarPoligonoComPoligono(objA, (ConvexPolygonShape) shapeA, objB, (ConvexPolygonShape) shapeB, info);
+                            } else {
+                                pontosDeContacto = CollisionHelper.cortarPoligonoComPoligono(objB, (ConvexPolygonShape) shapeB, objA, (ConvexPolygonShape) shapeA, info);
+                            }
+
+                            for (Vector2 ponto : pontosDeContacto) {
+                                System.out.printf("Ponto de contacto em X: %.2f, Y: %.2f\n", ponto.x, ponto.y);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

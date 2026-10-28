@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-public class GridRenderer {
+public class  GridRenderer {
     private static final float AXIS_WIDTH = 0.1f;
     private static final float MAJOR_GRID_WIDTH = 0.06f;
     private static final int MAJOR_GRID_INTERVAL = 5;

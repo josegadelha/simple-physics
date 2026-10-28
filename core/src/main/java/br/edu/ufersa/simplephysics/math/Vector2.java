@@ -43,4 +43,12 @@ public class Vector2 {
     public Vector2 rotate90CW() {
         return new Vector2(this.y, -this.x);
     }
+
+    public Vector2 normalize() {
+        double len = length();
+        if (len == 0) {
+            return new Vector2(0, 0); // Prevents division by zero
+        }
+        return new Vector2(this.x / len, this.y / len);
+    }
 }

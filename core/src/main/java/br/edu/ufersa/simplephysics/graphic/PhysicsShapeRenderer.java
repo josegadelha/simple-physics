@@ -19,7 +19,10 @@ import java.util.Map;
 import java.util.Random;
 
 public class PhysicsShapeRenderer {
-    private static final int CIRCLE_SEGMENTS = 32;
+    private static final double REFERENCE_CIRCLE_RADIUS = 0.25;
+    private static final int REFERENCE_CIRCLE_SEGMENTS = 32;
+    private static final int MIN_CIRCLE_SEGMENTS = 16;
+    private static final int MAX_CIRCLE_SEGMENTS = 128;
     private static final Color OUTLINE_COLOR = Color.valueOf("686868");
 
     private final ShapeRenderer shapeRenderer;
@@ -34,10 +37,9 @@ public class PhysicsShapeRenderer {
     public void render(Camera camera, PhysicsWorld world) {
         shapeRenderer.setProjectionMatrix(camera.combined);
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        try {
-            for (PhysicsObject object : world.objects) {
+        for (PhysicsObject object : world.objects) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            try {
                 shapeRenderer.setColor(getFillColor(object));
                 for (PhysicsShape shape : object.shapes) {
                     if (shape instanceof CircleShape) {
@@ -50,16 +52,13 @@ public class PhysicsShapeRenderer {
                         );
                     }
                 }
+            } finally {
+                shapeRenderer.end();
             }
-        } finally {
-            shapeRenderer.end();
-        }
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(OUTLINE_COLOR);
-
-        try {
-            for (PhysicsObject object : world.objects) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            try {
+                shapeRenderer.setColor(OUTLINE_COLOR);
                 for (PhysicsShape shape : object.shapes) {
                     if (shape instanceof CircleShape) {
                         drawCircleOutline(object, (CircleShape) shape);
@@ -67,24 +66,21 @@ public class PhysicsShapeRenderer {
                         drawPolygonOutline(object, (ConvexPolygonShape) shape);
                     }
                 }
+            } finally {
+                shapeRenderer.end();
             }
-        } finally {
-            shapeRenderer.end();
-        }
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(OUTLINE_COLOR);
-
-        try {
-            for (PhysicsObject object : world.objects) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            try {
+                shapeRenderer.setColor(OUTLINE_COLOR);
                 for (PhysicsShape shape : object.shapes) {
                     if (shape instanceof CircleShape) {
                         drawCircleCenter(object, (CircleShape) shape);
                     }
                 }
+            } finally {
+                shapeRenderer.end();
             }
-        } finally {
-            shapeRenderer.end();
         }
     }
 
@@ -105,7 +101,7 @@ public class PhysicsShapeRenderer {
             (float) center.x,
             (float) center.y,
             (float) circle.radius,
-            CIRCLE_SEGMENTS
+            getCircleSegments(circle.radius)
         );
     }
 
@@ -131,7 +127,7 @@ public class PhysicsShapeRenderer {
             (float) center.x,
             (float) center.y,
             (float) circle.radius,
-            CIRCLE_SEGMENTS
+            getCircleSegments(circle.radius)
         );
         shapeRenderer.line(
             (float) center.x,
@@ -148,8 +144,13 @@ public class PhysicsShapeRenderer {
             (float) center.x,
             (float) center.y,
             (float) circle.radius * 0.1f,
-            CIRCLE_SEGMENTS
+            getCircleSegments(circle.radius)
         );
+    }
+
+    private int getCircleSegments(double radius) {
+        int segments = (int) Math.ceil(REFERENCE_CIRCLE_SEGMENTS * Math.sqrt(radius / REFERENCE_CIRCLE_RADIUS));
+        return Math.clamp(segments, MIN_CIRCLE_SEGMENTS, MAX_CIRCLE_SEGMENTS);
     }
 
     private void drawPolygonOutline(PhysicsObject object, ConvexPolygonShape polygon) {

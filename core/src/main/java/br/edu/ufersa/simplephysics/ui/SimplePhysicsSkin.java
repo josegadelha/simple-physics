@@ -31,6 +31,9 @@ public final class SimplePhysicsSkin {
     private static final Color BUTTON_UP = Color.valueOf("3a3a3a");
     private static final Color BUTTON_OVER = Color.valueOf("464646");
     private static final Color BUTTON_DOWN = Color.valueOf("262626");
+    private static final Color TEXT_SELECTION = Color.valueOf("686868");
+    private static final Color SCROLLBAR_TRACK = Color.valueOf("262626");
+    private static final Color SCROLLBAR_KNOB = Color.valueOf("3a3a3a");
 
     private static final int CORNER_RADIUS = 10;
     private static final int PATCH_SIZE = CORNER_RADIUS * 2 + 4;
@@ -57,6 +60,18 @@ public final class SimplePhysicsSkin {
 
         // Panel background.
         skin.add("panel", rounded(skin, "panel-texture", PANEL, CORNER_RADIUS));
+        Drawable scrollbarTrack = rounded(skin, "scrollbar-track-texture", SCROLLBAR_TRACK, 4);
+        Drawable scrollbarKnob = rounded(skin, "scrollbar-knob-texture", SCROLLBAR_KNOB, 4);
+        skin.add(
+            "scrollbar-track",
+            scrollbarTrack,
+            Drawable.class
+        );
+        skin.add(
+            "scrollbar-knob",
+            scrollbarKnob,
+            Drawable.class
+        );
 
         // Button style.
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
@@ -76,8 +91,16 @@ public final class SimplePhysicsSkin {
         TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
         textFieldStyle.font = bodyFont;
         textFieldStyle.fontColor = TEXT;
-        textFieldStyle.cursor = rounded(skin, "text-field-cursor", TEXT, 0);
-        textFieldStyle.selection = rounded(skin, "text-field-selection", BUTTON_OVER, 4);
+        NinePatchDrawable cursor = (NinePatchDrawable) rounded(
+            skin,
+            "text-field-cursor",
+            TEXT,
+            0
+        );
+        cursor.setMinWidth(2);
+        cursor.setMinHeight(18);
+        textFieldStyle.cursor = cursor;
+        textFieldStyle.selection = rounded(skin, "text-field-selection", TEXT_SELECTION, 4);
         textFieldStyle.background = rounded(skin, "text-field-background", BUTTON_UP, CORNER_RADIUS);
         textFieldStyle.focusedBackground = rounded(
             skin,

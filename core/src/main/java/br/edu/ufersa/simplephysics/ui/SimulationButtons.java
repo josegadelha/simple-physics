@@ -5,6 +5,9 @@ import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
 import br.edu.ufersa.simplephysics.screen.SimulationInputController;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -42,6 +45,18 @@ public final class SimulationButtons {
         return createToolButton(
             "Create circle",
             SimulationInputController.Tool.CREATE_CIRCLE,
+            skin,
+            inputController
+        );
+    }
+
+    public static TextButton createDragObjectButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        return createToolButton(
+            "Drag objects",
+            SimulationInputController.Tool.DRAG_OBJECT,
             skin,
             inputController
         );
@@ -109,18 +124,21 @@ public final class SimulationButtons {
         java.util.function.DoubleConsumer valueSetter,
         java.util.function.DoubleSupplier valueGetter
     ) {
-        TextField valueField = new TextField(formatSize(initialValue), skin);
+        TextField valueField = new FocusClearingTextField(formatSize(initialValue), skin);
         valueField.setTextFieldFilter((textField, character) -> {
             if (!Character.isDigit(character) && character != '.') {
                 return false;
             }
 
             String currentText = textField.getText();
-            int start = textField.getCursorPosition();
-            int end = start;
-            if (textField.getSelectionStart() >= 0) {
-                start = Math.min(textField.getCursorPosition(), textField.getSelectionStart());
-                end = Math.max(textField.getCursorPosition(), textField.getSelectionStart());
+            int cursorPosition = Math.max(0, Math.min(textField.getCursorPosition(), currentText.length()));
+            int start = cursorPosition;
+            int end = cursorPosition;
+            int selectionStart = textField.getSelectionStart();
+            if (selectionStart >= 0 && selectionStart != cursorPosition) {
+                int selectionPosition = Math.max(0, Math.min(selectionStart, currentText.length()));
+                start = Math.min(cursorPosition, selectionPosition);
+                end = Math.max(cursorPosition, selectionPosition);
             }
             String candidate = currentText.substring(0, start)
                 + character
@@ -196,6 +214,47 @@ public final class SimulationButtons {
             .toPlainString();
     }
 
+    private static final class FocusClearingTextField extends TextField {
+        private final InputListener clickAwayListener = new InputListener() {
+            @Override
+            public boolean touchDown(
+                InputEvent event,
+                float x,
+                float y,
+                int pointer,
+                int button
+            ) {
+                if (event.getTarget() != FocusClearingTextField.this) {
+                    getStage().setKeyboardFocus(null);
+                }
+                return false;
+            }
+        };
+
+        private Stage listenerStage;
+
+        private FocusClearingTextField(String text, Skin skin) {
+            super(text, skin);
+        }
+
+        @Override
+        public void setStage(Stage stage) {
+            if (listenerStage != null && listenerStage != stage) {
+                listenerStage.getRoot().removeCaptureListener(clickAwayListener);
+                if (listenerStage.getKeyboardFocus() == this) {
+                    listenerStage.setKeyboardFocus(null);
+                }
+                listenerStage = null;
+            }
+
+            super.setStage(stage);
+            if (stage != null && listenerStage == null) {
+                listenerStage = stage;
+                stage.getRoot().addCaptureListener(clickAwayListener);
+            }
+        }
+    }
+
     // Creates a toggle button that enables or disables gravity in the physics world.
     public static TextButton createGravityButton(Skin skin, PhysicsWorld world) {
         TextButton button = createToggleButton("Gravity", skin);
@@ -206,6 +265,17 @@ public final class SimulationButtons {
                 world.gravity = button.isChecked()
                     ? new Vector2(0, -9.81)
                     : new Vector2(0, 0);
+            }
+        });
+        return button;
+    }
+
+    public static TextButton createVelocityReductionButton(Skin skin, PhysicsWorld world) {
+        TextButton button = createToggleButton("Reduce velocity", skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                world.reduceVelocityEnabled = button.isChecked();
             }
         });
         return button;
@@ -252,6 +322,43 @@ public final class SimulationButtons {
         );
     }
 
+    public static TextButton createRevoluteConstraintButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        return createToolButton(
+            "Create revolute joint",
+            SimulationInputController.Tool.CREATE_REVOLUTE_CONSTRAINT,
+            skin,
+            inputController
+        );
+    }
+
+    public static TextButton createImpulseScalingButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        TextButton button = new TextButton(getImpulseScalingLabel(inputController), skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                inputController.toggleImpulseScaling();
+                button.setText(getImpulseScalingLabel(inputController));
+            }
+        });
+        return button;
+    }
+
+    private static String getImpulseScalingLabel(
+        SimulationInputController inputController
+    ) {
+        return "Impulse scaling: "
+            + (inputController.getImpulseScaling()
+                == SimulationInputController.ImpulseScaling.LINEAR
+                    ? "Linear"
+                    : "Exponential");
+    }
+
     // Creates a toggle button that lets the next simulation click choose the camera target.
     public static TextButton createFollowObjectButton(
         Skin skin,
@@ -262,6 +369,20 @@ public final class SimulationButtons {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 inputController.setCameraFollowEnabled(button.isChecked());
+            }
+        });
+        return button;
+    }
+
+    public static TextButton createResetCameraButton(
+        Skin skin,
+        SimulationInputController inputController
+    ) {
+        TextButton button = new TextButton("Reset camera", skin);
+        button.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                inputController.resetCameraToOrigin();
             }
         });
         return button;
@@ -318,7 +439,11 @@ public final class SimulationButtons {
         TextButton button,
         SimulationInputController inputController
     ) {
-        if (!button.isChecked()) {
+        boolean followEnabled = inputController.isCameraFollowEnabled();
+        if (button.isChecked() != followEnabled) {
+            button.setChecked(followEnabled);
+        }
+        if (!followEnabled) {
             button.setText("Follow: OFF");
         } else if (inputController.isFollowingObject()) {
             button.setText("Tracking");

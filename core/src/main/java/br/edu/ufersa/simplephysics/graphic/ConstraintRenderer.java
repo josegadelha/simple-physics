@@ -1,7 +1,6 @@
 package br.edu.ufersa.simplephysics.graphic;
 
 import br.edu.ufersa.simplephysics.math.Vector2;
-import br.edu.ufersa.simplephysics.physics.PhysicsObject;
 import br.edu.ufersa.simplephysics.physics.PhysicsWorld;
 import br.edu.ufersa.simplephysics.physics.constraints.Constraint;
 import br.edu.ufersa.simplephysics.physics.constraints.RevoluteConstraint;

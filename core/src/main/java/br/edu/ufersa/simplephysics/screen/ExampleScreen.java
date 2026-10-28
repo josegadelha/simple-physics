@@ -182,7 +182,7 @@ public class ExampleScreen extends ScreenAdapter {
 
         panelTable.add(shapeOptionsTable).width(300).height(310);
         panelTable.row().padTop(12);
-        panelTable.add(physicsOptionsTable).width(300).height(394);
+        panelTable.add(physicsOptionsTable).width(300).height(460);
         panelTable.row().padTop(12);
         panelTable.add(cameraOptionsTable).width(300).height(172);
 

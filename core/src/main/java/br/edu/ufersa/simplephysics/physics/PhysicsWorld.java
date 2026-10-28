@@ -138,8 +138,10 @@ public class PhysicsWorld {
             object.step(dt);
         }
 
-        // Remove objects that are too far away.
-        objects.removeIf(object -> Math.hypot(object.position.x, object.position.y) > MAX_OBJECT_DISTANCE);
+        // Remove objects that are too far away or have invalid positions.
+        objects.removeIf(object -> !Double.isFinite(object.position.x)
+            || !Double.isFinite(object.position.y)
+            || Math.hypot(object.position.x, object.position.y) > MAX_OBJECT_DISTANCE);
     }
 
     private void detectCollisions() {
